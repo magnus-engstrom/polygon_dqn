@@ -47,7 +47,7 @@ class Environment:
         return intersection
 
     def _create_scaler(self, scale, shapes):
-        self.scaler = MinMaxScaler(feature_range=(0,scale))
+        self.scaler = MinMaxScaler(feature_range=(0, scale))
         self.scaler.fit([list(p) for s in shapes for p in s])
 
     def _coordinates_to_pixels(self, shape):

@@ -1,10 +1,10 @@
 import pygame
-
+import math
 class Renderer:
     def __init__(self, res):
         pygame.init()
         self.frame_count = 0
-        self.display=pygame.display.set_mode((res*2, res))
+        self.display=pygame.display.set_mode((res*3, res))
         self.clock = pygame.time.Clock()
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
@@ -12,19 +12,20 @@ class Renderer:
 
     def draw_3D(self, rays):
         offset = 500
-        width = 500 / len(rays)
+        width = 1000 / len(rays)
         screen_height = 500
         shading = 0
         color_max = 150
         for i, ray in enumerate(rays):
-            #800/(rayDistMath.abs(Math.cos(angleOff))); 
-            #print((1-(ray.lens_length()/500)))
-            height = screen_height * (1-(ray.lens_length()/screen_height))
-            shading = color_max *  (1 - ray.scale_ration())
-            y_start = (screen_height / 2) - (height / 2)
-            rect = [i + offset, y_start, width + 2, height]
+            #height = screen_height * (1-(ray.lens_length()/screen_height))
+            z = ray.length * math.cos(ray.angle)
+            wall_height = screen_height / z * 20
+            top = (screen_height / 2) - (wall_height / 2)
+            shading = color_max * (1 - z/ray.max_length)
+            rect = [i + offset, top, width + 2, wall_height]
+
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
-            offset += width
+            offset += width - 1
 
     def draw_2D(self, lines, agent):
         for line in lines:
