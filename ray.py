@@ -13,13 +13,3 @@ class Ray:
                 player_position[1] + length * math.sin(player_angle + self.angle)
             )
         )
-
-    def scale_ration(self):
-        if self.length == self.max_length:
-            return 1
-        return self.lens_length() / self.max_length
-
-    def lens_length(self):
-        #print(self.length * math.cos(self.angle) / 500)
-        return self.length * math.cos(self.angle)
-        #800/(rayDistMath.abs(Math.cos(angleOff))); 

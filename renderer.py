@@ -1,29 +1,42 @@
 import pygame
 import math
+import os
 class Renderer:
     def __init__(self, res):
         pygame.init()
         self.frame_count = 0
-        self.display=pygame.display.set_mode((res*3, res))
+        self.assets = {}
+        self.display=pygame.display.set_mode((500 + 500, res))
         self.clock = pygame.time.Clock()
+        self.prepare_assets_3D()
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
 
+    def prepare_assets_3D(self):
+        floor = pygame.image.load(os.path.join("assets/floor.png"))
+        floor.convert()
+        self.assets["floor"] = pygame.transform.scale(floor, (500, 150))
+        floor = pygame.image.load(os.path.join("assets/sky.png"))
+        floor.convert()
+        self.assets["sky"] = pygame.transform.scale(floor, (500, 150))
+
     def draw_3D(self, rays):
         offset = 500
-        width = 1000 / len(rays)
-        screen_height = 500
+        width = 500 / len(rays)
+        screen_height = 300
         shading = 0
         color_max = 150
+        self.display.blit(self.assets["sky"], [500, 0, 500, 150])
+        self.display.blit(self.assets["floor"], [500, 150, 500, 150])
         for i, ray in enumerate(rays):
-            #height = screen_height * (1-(ray.lens_length()/screen_height))
+            #if not ray.max_length == ray.length:
             z = ray.length * math.cos(ray.angle)
-            wall_height = screen_height / z * 20
+            wall_height = screen_height / z * 15
+            wall_height = min(wall_height, 300)
             top = (screen_height / 2) - (wall_height / 2)
             shading = color_max * (1 - z/ray.max_length)
-            rect = [i + offset, top, width + 2, wall_height]
-
+            rect = [i + offset, top, width + 1, wall_height]
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
             offset += width - 1
 
@@ -39,6 +52,7 @@ class Renderer:
         self.draw_2D(lines, agent)
         self.draw_3D(agent.rays)
         pygame.display.update()
+        pygame.display.flip()
         self.clock.tick(10)
         self.frame_count += 1
         return self.frame_count 

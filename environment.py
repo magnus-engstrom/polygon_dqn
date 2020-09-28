@@ -23,13 +23,29 @@ class Environment:
     def get_state(self, rays):
         for i, _ in enumerate(rays):
             new_length = rays[i].length
+            check_v = False
+            check_h = False
+            if rays[i].coords[1][1] > rays[i].coords[0][1]:
+                vert = "down"
+            else:
+                vert = "up"
+            if rays[i].coords[1][0] > rays[i].coords[0][0]:
+                horizontal = "left"
+            else:
+                horizontal = "right"
             for line in self.lines:
-                intersection = self.intersection(LineString(rays[i].coords), LineString(line), rays[i].length)
-                if intersection:
-                    new_length = math.sqrt( ((rays[i].coords[0][0]-intersection[0])**2)+((rays[i].coords[0][1]-intersection[1])**2))
-                    if new_length < rays[i].length:
-                        rays[i].length = new_length
-                        rays[i].coords = (rays[i].coords[0], intersection)
+                line = np.array(line)
+                if max(line[:,1]) > rays[i].coords[0][1] and vert == "down": check_v = True
+                if min(line[:,1]) <= rays[i].coords[0][1] and vert == "up": check_v = True
+                if max(line[:,0]) > rays[i].coords[0][0] and horizontal == "left": check_h = True
+                if min(line[:,0]) <= rays[i].coords[0][0] and horizontal == "right": check_h = True
+                if check_v and check_h:
+                    intersection = self.intersection(LineString(rays[i].coords), LineString(line), rays[i].length)
+                    if intersection:
+                        new_length = math.sqrt( ((rays[i].coords[0][0]-intersection[0])**2)+((rays[i].coords[0][1]-intersection[1])**2))
+                        if new_length < rays[i].length:
+                            rays[i].length = new_length
+                            rays[i].coords = (rays[i].coords[0], intersection)
         return rays
 
 
