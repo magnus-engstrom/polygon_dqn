@@ -20,26 +20,17 @@ class Environment:
                     (shape[i+1][0], shape[i+1][1])
                 ])
 
-    def get_state(self, rays, visibility):
-        processed_rays = []
-        min_distance = visibility
-        ray_lengths = []
-        for ray in rays:
-            state_ray = ray
-            ray_length = visibility
-            new_length = visibility
+    def get_state(self, rays):
+        for i, _ in enumerate(rays):
+            new_length = rays[i].length
             for line in self.lines:
-                intersection = self.intersection(LineString(ray), LineString(line), visibility)
+                intersection = self.intersection(LineString(rays[i].coords), LineString(line), rays[i].length)
                 if intersection:
-                    new_length = math.sqrt( ((ray[0][0]-intersection[0])**2)+((ray[0][1]-intersection[1])**2))
-                    if new_length < ray_length:
-                        ray_length = new_length
-                        if new_length < min_distance:
-                            min_distance = new_length
-                        state_ray = [(ray[0][0], ray[0][1]), intersection]
-            processed_rays.append(state_ray)
-            ray_lengths.append(ray_length)
-        return processed_rays, min_distance, ray_lengths
+                    new_length = math.sqrt( ((rays[i].coords[0][0]-intersection[0])**2)+((rays[i].coords[0][1]-intersection[1])**2))
+                    if new_length < rays[i].length:
+                        rays[i].length = new_length
+                        rays[i].coords = (rays[i].coords[0], intersection)
+        return rays
 
 
     def intersection(self, line1, line2, visibility):
