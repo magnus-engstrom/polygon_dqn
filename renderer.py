@@ -5,7 +5,7 @@ class Renderer:
     def __init__(self, res):
         pygame.init()
         self.scale = 500
-        self.agent_visibility = 0.1
+        self.agent_visibility = 0.6
         self.frame_count = 0
         self.assets = {}
         self.display=pygame.display.set_mode((500 + 500, res))
@@ -35,7 +35,7 @@ class Renderer:
             for ray_line in ray_line_string:
                 #if not ray.max_length == ray.length:
                 z = ray_line[4] * math.cos(ray_line[5])
-                wall_height = screen_height / z * 15
+                wall_height = screen_height / z * 0.015
                 wall_height = min(wall_height, 300)
                 top = (screen_height / 2) - (wall_height / 2)
                 shading = color_max * (1 - z/self.agent_visibility)
@@ -62,6 +62,6 @@ class Renderer:
         self.draw_3D(ray_line_strings)
         pygame.display.update()
         pygame.display.flip()
-        self.clock.tick(60)
+        self.clock.tick(120)
         self.frame_count += 1
         return self.frame_count 

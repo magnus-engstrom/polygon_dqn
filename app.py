@@ -9,9 +9,9 @@ if __name__ == "__main__":
     agent = Agent((0.5, 0.5), 0.0)
     direction_change = 0
 
-    min_distance_to_obstacle = 0.005
-    speed = 0.0004
-    slow_speed = 0.00005
+    min_distance_to_obstacle = 0.01
+    speed = 0.006
+    slow_speed = 0.0001
 
     env_line_strings = env.line_strings
 
