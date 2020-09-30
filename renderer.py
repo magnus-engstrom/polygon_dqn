@@ -4,6 +4,8 @@ import os
 class Renderer:
     def __init__(self, res):
         pygame.init()
+        self.scale = 500
+        self.agent_visibility = 0.1
         self.frame_count = 0
         self.assets = {}
         self.display=pygame.display.set_mode((500 + 500, res))
@@ -21,40 +23,43 @@ class Renderer:
         floor.convert()
         self.assets["sky"] = pygame.transform.scale(floor, (500, 150))
 
-    def draw_3D(self, rays):
+    def draw_3D(self, ray_line_strings):
         offset = 500
-        width = 500 / len(rays)
+        width = 500 / len(ray_line_strings)
         screen_height = 300
         shading = 0
         color_max = 150
         self.display.blit(self.assets["sky"], [500, 0, 500, 150])
         self.display.blit(self.assets["floor"], [500, 150, 500, 150])
-        for i, ray in enumerate(rays):
-            #if not ray.max_length == ray.length:
-            z = ray.length * math.cos(ray.angle)
-            wall_height = screen_height / z * 15
-            wall_height = min(wall_height, 300)
-            top = (screen_height / 2) - (wall_height / 2)
-            shading = color_max * (1 - z/ray.max_length)
-            rect = [i + offset, top, width + 1, wall_height]
-            pygame.draw.rect(self.display, (shading, shading, shading), rect)
-            offset += width - 1
+        for i, ray_line_string in enumerate(ray_line_strings):
+            for ray_line in ray_line_string:
+                #if not ray.max_length == ray.length:
+                z = ray_line[4] * math.cos(ray_line[5])
+                wall_height = screen_height / z * 15
+                wall_height = min(wall_height, 300)
+                top = (screen_height / 2) - (wall_height / 2)
+                shading = color_max * (1 - z/self.agent_visibility)
+                rect = [i + offset, top, width + 1, wall_height]
+                pygame.draw.rect(self.display, (shading, shading, shading), rect)
+                offset += width - 1
 
-    def draw_2D(self, lines, agent):
-        for line in lines:
-            start = (line[0][0], line[0][1])
-            end = (line[1][0], line[1][1])
-            pygame.draw.line(self.display, (200, 200, 200), start, end)
-            for ray in agent.rays:
-                start = (ray.coords[0][0], ray.coords[0][1])
-                end = (ray.coords[1][0], ray.coords[1][1])
-                pygame.draw.line(self.display, (255, 0, 0), start, end) 
-            pygame.draw.circle(self.display, (0, 255, 0), (agent.position[0], agent.position[1]), 5)
+    def draw_2D(self, env_line_strings, ray_line_strings):
+        for env_line_string in env_line_strings:
+            for env_line in env_line_string:
+                start = (env_line[0] * self.scale, env_line[1] * self.scale)
+                end = (env_line[2] * self.scale, env_line[3] * self.scale)
+                pygame.draw.line(self.display, (200, 200, 200), start, end)
+        for ray_line_string in ray_line_strings:
+            for ray_line in ray_line_string:
+                start = (ray_line[0] * self.scale, ray_line[1] * self.scale)
+                end = (ray_line[2] * self.scale, ray_line[3] * self.scale)
+                pygame.draw.line(self.display, (255, 0, 0), start, end)
+            #pygame.draw.circle(self.display, (0, 255, 0), (agent.position[0], agent.position[1]), 5)
 
-    def draw(self, lines, agent):
+    def draw(self, env_line_strings, ray_line_strings):
         self.display.fill((0, 0, 0))
-        self.draw_2D(lines, agent)
-        self.draw_3D(agent.rays)
+        self.draw_2D(env_line_strings, ray_line_strings)
+        self.draw_3D(ray_line_strings)
         pygame.display.update()
         pygame.display.flip()
         self.clock.tick(60)
