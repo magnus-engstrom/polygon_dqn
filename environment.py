@@ -2,7 +2,7 @@ from sklearn.preprocessing import MinMaxScaler
 import json
 import math
 import numpy as np
-from shapely.geometry import LineString
+import concurrent.futures
 
 class Environment:
     lines = []
@@ -21,46 +21,66 @@ class Environment:
                 ])
 
     def get_state(self, rays):
-        for i, _ in enumerate(rays):
-            new_length = rays[i].length
-            check_v = False
-            check_h = False
-            if rays[i].coords[1][1] > rays[i].coords[0][1]:
-                vert = "down"
-            else:
-                vert = "up"
-            if rays[i].coords[1][0] > rays[i].coords[0][0]:
-                horizontal = "left"
-            else:
-                horizontal = "right"
-            for line in self.lines:
-                line = np.array(line)
-                if max(line[:,1]) > rays[i].coords[0][1] and vert == "down": check_v = True
-                if min(line[:,1]) <= rays[i].coords[0][1] and vert == "up": check_v = True
-                if max(line[:,0]) > rays[i].coords[0][0] and horizontal == "left": check_h = True
-                if min(line[:,0]) <= rays[i].coords[0][0] and horizontal == "right": check_h = True
-                if check_v and check_h:
-                    intersection = self.intersection(LineString(rays[i].coords), LineString(line), rays[i].length)
-                    if intersection:
-                        new_length = math.sqrt( ((rays[i].coords[0][0]-intersection[0])**2)+((rays[i].coords[0][1]-intersection[1])**2))
-                        if new_length < rays[i].length:
-                            rays[i].length = new_length
-                            rays[i].coords = (rays[i].coords[0], intersection)
-        return rays
+        processed_rays = []
+        # for ray in rays:
+        #     processed_rays.append(self.check_ray(ray, self.lines))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        #with concurrent.futures.ProcessPoolExecutor() as executor:
+            #rays = executor.map(self.check_ray, rays)
+            processed_ray = {executor.submit(self.check_ray, ray, self.lines): ray for ray in rays}
+            for future in concurrent.futures.as_completed(processed_ray):
+                #print(processed_ray[future])
+                processed_rays.append(future.result())
+        return sorted(processed_rays, key = lambda r: r.angle) 
 
-
-    def intersection(self, line1, line2, visibility):
-        min_length = visibility
-        intersection = []
-        if not line1.intersection(line2).is_empty:
-            ip = line1.intersection(line2)
-            sp = list(line1.coords)[0]
-            l = math.sqrt( ((sp[0]-ip.x)**2)+((sp[1]-ip.y)**2))
-            if l < min_length:
-                intersection = (ip.x, ip.y)
+    def check_ray(self, ray, lines):
+        if ray.coords[1][1] > ray.coords[0][1]:
+            lines = list(filter(lambda l: l[0][1] >= ray.coords[0][1] or l[1][1] >= ray.coords[0][1], lines))
         else:
-            return None
-        return intersection
+            lines = list(filter(lambda l: l[0][1] < ray.coords[0][1] or l[1][1] < ray.coords[0][1], lines))
+        if ray.coords[1][0] > ray.coords[0][0]:
+            lines = list(filter(lambda l: l[0][0] > ray.coords[0][0] or l[1][0] > ray.coords[0][0], lines))
+        else:
+            lines = list(filter(lambda l: l[0][0] < ray.coords[0][0] or l[1][0] < ray.coords[0][0], lines))
+        for line in lines:
+            processed_ray = self.check_intersections(ray, line)
+            if processed_ray.length < ray.length:
+                return processed_ray
+        return ray
+
+    def check_intersections(self, ray, line):
+        new_length = ray.length
+        intersection = self.intersection2(
+            (ray.coords[0][0]), 
+            (ray.coords[0][1]), 
+            (ray.coords[1][0]),
+            (ray.coords[1][1]), 
+            (line[0][0]),
+            (line[0][1]), 
+            (line[1][0]),
+            (line[1][1])
+        )
+        if intersection:
+            new_length = math.sqrt( ((ray.coords[0][0]-intersection[0])**2)+((ray.coords[0][1]-intersection[1])**2))
+            if new_length < ray.length:
+                ray.length = new_length
+                ray.coords = (ray.coords[0], intersection)
+        return ray
+
+
+    def intersection2(self, Ax1, Ay1, Ax2, Ay2, Bx1, By1, Bx2, By2):
+        d = (By2 - By1) * (Ax2 - Ax1) - (Bx2 - Bx1) * (Ay2 - Ay1)
+        if d:
+            uA = ((Bx2 - Bx1) * (Ay1 - By1) - (By2 - By1) * (Ax1 - Bx1)) / d
+            uB = ((Ax2 - Ax1) * (Ay1 - By1) - (Ay2 - Ay1) * (Ax1 - Bx1)) / d
+        else:
+            return
+        if not(0 <= uA <= 1 and 0 <= uB <= 1):
+            return
+        x = Ax1 + uA * (Ax2 - Ax1)
+        y = Ay1 + uA * (Ay2 - Ay1)
+
+        return x, y     
 
     def _create_scaler(self, scale, shapes):
         self.scaler = MinMaxScaler(feature_range=(0, scale))

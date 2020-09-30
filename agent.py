@@ -4,13 +4,13 @@ import random
 from ray import Ray
 class Agent:
     def __init__(self, position):
-        self.speed = 2
+        self.speed = 1
         self.position = position
         self.old_position = position
         self.direction = random.random() * 6.28
-        self.ray_count = 100
-        self.fov = 0.5
-        self.visibility = 350
+        self.ray_count = 128
+        self.fov = 0.45
+        self.visibility = 300
         self.rays = self.cast_rays()
 
     def cast_rays(self):
@@ -26,7 +26,8 @@ class Agent:
             ))
         return rays
 
-    def move(self, direction_change, revert=False):
+    def move(self, direction_change, speed, revert=False):
+        self.speed = speed
         if revert: 
             self.position = self.old_position
         self.direction += direction_change

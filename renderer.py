@@ -42,10 +42,14 @@ class Renderer:
 
     def draw_2D(self, lines, agent):
         for line in lines:
-            pygame.draw.line(self.display, (200, 200, 200), line[0], line[1])
-            pygame.draw.circle(self.display, (0, 255, 0), agent.position, 10)
+            start = (line[0][0], line[0][1])
+            end = (line[1][0], line[1][1])
+            pygame.draw.line(self.display, (200, 200, 200), start, end)
             for ray in agent.rays:
-                pygame.draw.line(self.display, (255, 0, 0), ray.coords[0], ray.coords[1]) 
+                start = (ray.coords[0][0], ray.coords[0][1])
+                end = (ray.coords[1][0], ray.coords[1][1])
+                pygame.draw.line(self.display, (255, 0, 0), start, end) 
+            pygame.draw.circle(self.display, (0, 255, 0), (agent.position[0], agent.position[1]), 5)
 
     def draw(self, lines, agent):
         self.display.fill((0, 0, 0))
@@ -53,6 +57,6 @@ class Renderer:
         self.draw_3D(agent.rays)
         pygame.display.update()
         pygame.display.flip()
-        self.clock.tick(10)
+        self.clock.tick(60)
         self.frame_count += 1
         return self.frame_count 
