@@ -28,7 +28,7 @@ impl Agent {
             speed: 0.0004,
             direction,
             ray_count: 128.0,
-            fov: 0.4,
+            fov: 0.45,
             visibility: 0.6,
             position: Point::from(position),
             rays: vec![],

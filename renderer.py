@@ -51,7 +51,7 @@ class Renderer:
             start = (ray["start_x"] * self.scale, ray["start_y"] * self.scale)
             end = (ray["end_x"] * self.scale, ray["end_y"] * self.scale)
             pygame.draw.line(self.display, (255, 0, 0), start, end)
-        #pygame.draw.circle(self.display, (0, 255, 0), (agent.position[0], agent.position[1]), 5)
+        pygame.draw.circle(self.display, (0, 255, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
 
     def draw(self, env_lines, rays):
         self.display.fill((0, 0, 0))
@@ -59,6 +59,6 @@ class Renderer:
         self.draw_3D(rays)
         pygame.display.update()
         pygame.display.flip()
-        self.clock.tick(120)
+        #self.clock.tick(60)
         self.frame_count += 1
         return self.frame_count 

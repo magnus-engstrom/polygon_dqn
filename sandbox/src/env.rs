@@ -6,8 +6,6 @@ use std::collections::HashMap;
 
 #[pyclass]
 pub(crate) struct Env {
-    //#[pyo3(get, set)]
-    //pub line_strings: Arc<Mutex<Vec<LineString<f64>>>>,
     pub line_strings: Vec<LineString<f64>>,
     #[pyo3(get, set)]
     scalex: f64,
@@ -52,13 +50,4 @@ impl Env {
             utils::cull_line_strings(&mut agent.rays, &self.line_strings, agent.position);
         utils::find_intersections_seq(&mut agent.rays, &intersecting_line_strings, agent.position)
     }
-
-    /*
-    #[setter]
-    fn set_line_strings(&mut self, value: i32) -> PyResult<()> {
-        self.num = value;
-        Ok(())
-    }
-
-     */
 }
