@@ -6,6 +6,7 @@ use geo::{Geometry, GeometryCollection, LineString, Point, Polygon};
 use geojson::{quick_collection, GeoJson};
 use line_intersection::{LineInterval, LineRelation};
 use std::fs;
+use geo::bounding_rect::BoundingRect;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
     let geojson_str = fs::read_to_string(path).unwrap();
@@ -75,7 +76,6 @@ pub fn cull_line_strings<'a>(
     line_strings: &'a Vec<LineString<f64>>,
     origin_position: Point<f64>,
 ) -> Vec<&'a LineString<f64>> {
-    let direction_ray = rays[(rays.len() as f64 / 2.0).floor() as usize];
     let polygon = Polygon::new(
         LineString::from(vec![
             origin_position.x_y(), // origin
@@ -90,35 +90,61 @@ pub fn cull_line_strings<'a>(
         vec![],
     );
 
-    // if ray.coords[1][1] > ray.coords[0][1]:
-    //     lines = list(filter(lambda l: l[0][1] >= ray.coords[0][1] or l[1][1] >= ray.coords[0][1], lines))
-    // else:
-    //     lines = list(filter(lambda l: l[0][1] < ray.coords[0][1] or l[1][1] < ray.coords[0][1], lines))
-    // if ray.coords[1][0] > ray.coords[0][0]:
-    //     lines = list(filter(lambda l: l[0][0] > ray.coords[0][0] or l[1][0] > ray.coords[0][0], lines))
-    // else:
-    //     lines = list(filter(lambda l: l[0][0] < ray.coords[0][0] or l[1][0] < ray.coords[0][0], lines))
-
-    let mut possible_intersecting_line_strings = vec![];
-    let agent_y = origin_position.y();
-    for line_string in line_strings.iter() {
-        if agent_y > direction_ray.line.end.y { // agent is heading up
-            line_string.lines().fold(origin_position.y(), |acc, line|{
-                if line.start.y > agent_y || line.end.y > agent_y {
-
-                }
-            })
-        }        
-    }
-
-    // let mut possible_intersecting_line_strings = vec![];
-    // for line_string in line_strings.iter() {
-    //     origin_position.x_y()
-    // }   
-
     let mut intersecting_line_strings = vec![];
     for line_string in line_strings.iter() {
         if polygon.intersects(line_string) {
+            intersecting_line_strings.push(line_string)
+        }
+    }
+    intersecting_line_strings
+}
+
+pub fn cull_line_strings_precull<'a>(
+    rays: &Vec<Ray>,
+    line_strings: &'a Vec<LineString<f64>>,
+    origin_position: Point<f64>,
+) -> Vec<&'a LineString<f64>> {
+    let polygon = Polygon::new(
+        LineString::from(vec![
+            origin_position.x_y(), // origin
+            rays[0].line_string.0[1].x_y(),
+            rays[(rays.len() as f64 / 2.0).floor() as usize]
+                .line_string
+                .0[1]
+                .x_y(),
+            rays[rays.len() - 1].line_string.0[1].x_y(),
+            origin_position.x_y(), // origin
+        ]),
+        vec![],
+    );
+
+    let bbox =  polygon.bounding_rect().unwrap();
+
+    let max_x = bbox.max().x;
+    let max_y = bbox.max().y;
+    let min_x = bbox.min().x;
+    let min_y = bbox.min().y;
+
+    let mut intersecting_line_strings = vec![];
+    for line_string in line_strings.iter() {
+        let mut check = false;
+        for line in line_string.lines() {
+            if line.start.x > max_x && line.end.x > max_x {
+                break;
+            }
+            if line.start.y > max_y && line.end.y > max_y {
+                break;
+            }
+            if line.start.x < min_x && line.end.x < min_x {
+                break;
+            }
+            if line.start.y < min_y && line.end.y < min_y {
+                break;
+            }
+            check = true;
+        }
+
+        if check && polygon.intersects(line_string) {
             intersecting_line_strings.push(line_string)
         }
     }
@@ -167,4 +193,43 @@ fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -
         }
     }
     intersections
+}
+
+#[cfg(test)]
+mod tests {
+    use test::Bencher;
+    use geo::Point;
+    use crate::ray::Ray;
+    use crate::utils;
+
+
+    #[bench]
+    fn test_culling_obstacles(b: &mut Bencher) {
+        let position = Point::new(0.5, 0.5);
+        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (line_strings, _scalex, _scaley) = utils::import_line_strings("data/obstacles.json".into());
+        b.iter(|| {
+            utils::cull_line_strings(&mut rays, &line_strings, position)
+        });
+    }
+
+    #[bench]
+    fn test_culling_obstacles_preculling(b: &mut Bencher) {
+        let position = Point::new(0.5, 0.5);
+        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (line_strings, _scalex, _scaley) = utils::import_line_strings("data/obstacles.json".into());
+        b.iter(|| {
+            utils::cull_line_strings_precull(&mut rays, &line_strings, position)
+        });
+    }
+
+    #[bench]
+    fn test_culling_polygons(b: &mut Bencher) {
+        let position = Point::new(0.5, 0.5);
+        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (line_strings, _scalex, _scaley) = utils::import_line_strings("data/polygons.json".into());
+        b.iter(|| {
+            utils::cull_line_strings(&mut rays, &line_strings, position)
+        });
+    }
 }

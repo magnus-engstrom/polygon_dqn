@@ -47,7 +47,7 @@ impl Env {
 
     pub fn update_agent(&self, agent: &mut Agent) {
         let intersecting_line_strings =
-            utils::cull_line_strings(&mut agent.rays, &self.line_strings, agent.position);
+            utils::cull_line_strings_precull(&mut agent.rays, &self.line_strings, agent.position);
         utils::find_intersections_seq(&mut agent.rays, &intersecting_line_strings, agent.position)
     }
 }
