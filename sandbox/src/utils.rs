@@ -1,4 +1,5 @@
 use crate::ray::Ray;
+use geo::bounding_rect::BoundingRect;
 use geo::euclidean_distance::EuclideanDistance;
 use geo::intersects::Intersects;
 use geo::map_coords::MapCoordsInplace;
@@ -6,7 +7,6 @@ use geo::{Geometry, GeometryCollection, LineString, Point, Polygon};
 use geojson::{quick_collection, GeoJson};
 use line_intersection::{LineInterval, LineRelation};
 use std::fs;
-use geo::bounding_rect::BoundingRect;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
     let geojson_str = fs::read_to_string(path).unwrap();
@@ -118,7 +118,7 @@ pub fn cull_line_strings_precull<'a>(
         vec![],
     );
 
-    let bbox =  polygon.bounding_rect().unwrap();
+    let bbox = polygon.bounding_rect().unwrap();
 
     let max_x = bbox.max().x;
     let max_y = bbox.max().y;
@@ -197,39 +197,35 @@ fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -
 
 #[cfg(test)]
 mod tests {
-    use test::Bencher;
-    use geo::Point;
     use crate::ray::Ray;
     use crate::utils;
-
+    use geo::Point;
+    use test::Bencher;
 
     #[bench]
     fn test_culling_obstacles(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) = utils::import_line_strings("data/obstacles.json".into());
-        b.iter(|| {
-            utils::cull_line_strings(&mut rays, &line_strings, position)
-        });
+        let (line_strings, _scalex, _scaley) =
+            utils::import_line_strings("data/obstacles.json".into());
+        b.iter(|| utils::cull_line_strings(&mut rays, &line_strings, position));
     }
 
     #[bench]
     fn test_culling_obstacles_preculling(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) = utils::import_line_strings("data/obstacles.json".into());
-        b.iter(|| {
-            utils::cull_line_strings_precull(&mut rays, &line_strings, position)
-        });
+        let (line_strings, _scalex, _scaley) =
+            utils::import_line_strings("data/obstacles.json".into());
+        b.iter(|| utils::cull_line_strings_precull(&mut rays, &line_strings, position));
     }
 
     #[bench]
     fn test_culling_polygons(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) = utils::import_line_strings("data/polygons.json".into());
-        b.iter(|| {
-            utils::cull_line_strings(&mut rays, &line_strings, position)
-        });
+        let (line_strings, _scalex, _scaley) =
+            utils::import_line_strings("data/polygons.json".into());
+        b.iter(|| utils::cull_line_strings(&mut rays, &line_strings, position));
     }
 }
