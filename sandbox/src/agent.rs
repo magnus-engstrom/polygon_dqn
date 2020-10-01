@@ -2,6 +2,7 @@ use geo::{Coordinate, LineString, Point};
 
 use crate::ray::Ray;
 use pyo3::prelude::*;
+use std::collections::HashMap;
 
 #[pyclass]
 pub(crate) struct Agent {
@@ -35,27 +36,23 @@ impl Agent {
     }
 
     #[getter]
-    fn get_rays(&self) -> PyResult<Vec<Vec<(f64, f64, f64, f64, f64, f64)>>> {
-        let as_tuples = self
-            .rays
-            .iter()
-            .map(|ray| {
-                ray.line_string
-                    .lines()
-                    .map(|line| {
-                        (
-                            line.start.x,
-                            line.start.y,
-                            line.end.x,
-                            line.end.y,
-                            ray.length,
-                            ray.angle,
-                        )
-                    })
-                    .collect()
-            })
-            .collect();
-        Ok(as_tuples)
+    fn get_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+        let mut res = vec![];
+        for ray in self.rays.iter() {
+            for line in ray.line_string.lines() {
+                let hashmap: HashMap<&str, f64> =
+                    [
+                        ("start_x", line.start.x),
+                        ("start_y", line.start.y),
+                        ("end_x", line.end.x),
+                        ("end_y", line.end.y),
+                        ("length", ray.length),
+                        ("angle", ray.angle),
+                    ].iter().cloned().collect();
+                res.push(hashmap);
+            }
+        }
+        Ok(res)
     }
 
     pub fn cast_rays(&mut self) {

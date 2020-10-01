@@ -2,6 +2,7 @@ use crate::agent::Agent;
 use crate::utils;
 use geo::LineString;
 use pyo3::prelude::*;
+use std::collections::HashMap;
 
 #[pyclass]
 pub(crate) struct Env {
@@ -26,19 +27,22 @@ impl Env {
         }
     }
 
-    #[getter]
-    fn get_line_strings(&self) -> PyResult<Vec<Vec<(f64, f64, f64, f64)>>> {
-        let as_tuples = self
-            .line_strings
-            .iter()
-            .map(|line_string| {
-                line_string
-                    .lines()
-                    .map(|line| (line.start.x, line.start.y, line.end.x, line.end.y))
-                    .collect()
-            })
-            .collect();
-        Ok(as_tuples)
+    #[getter(lines)]
+    fn get_line_strings_as_lines(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+        let mut res = vec![];
+        for line_string in self.line_strings.iter() {
+            for line in line_string.lines() {
+                let hashmap: HashMap<&str, f64> =
+                    [
+                        ("start_x", line.start.x),
+                        ("start_y", line.start.y),
+                        ("end_x", line.end.x),
+                        ("end_y", line.end.y),
+                    ].iter().cloned().collect();
+                res.push(hashmap);
+            }
+        }
+        Ok(res)
     }
 
     pub fn update_agent(&self, agent: &mut Agent) {

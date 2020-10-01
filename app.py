@@ -13,17 +13,15 @@ if __name__ == "__main__":
     speed = 0.006
     slow_speed = 0.0001
 
-    env_line_strings = env.line_strings
+    env_lines = env.lines
 
     agent.cast_rays()
-    #rays return [[(start_x,start_y,end_x,end_y,length)]] ie rays[line_strings[(start_x,start_y,end_x,end_y,length), ..], ..]
-    rays_line_stings = agent.rays
+    rays = agent.rays
     while True:
-        if min([r[0][4] for r in rays_line_stings]) < min_distance_to_obstacle:
+        if min([r["length"] for r in rays]) < min_distance_to_obstacle:
             agent.step(random.random() / 2, slow_speed)
         else: 
             agent.step(direction_change, speed)
         env.update_agent(agent)
-        rays_line_stings = agent.rays
-        #print(rays)
-        renderer.draw(env_line_strings, rays_line_stings)
+        rays = agent.rays
+        renderer.draw(env_lines, rays)
