@@ -1,13 +1,12 @@
 use pyo3::prelude::*;
 
-mod utils;
-mod env;
 mod agent;
+mod env;
 mod ray;
+mod utils;
 
-use crate::env::Env;
 use crate::agent::Agent;
-
+use crate::env::Env;
 
 #[pymodule]
 fn sandbox(_py: Python, m: &PyModule) -> PyResult<()> {

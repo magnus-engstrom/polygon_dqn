@@ -1,4 +1,4 @@
-use geo::{Coordinate, LineString, Point, Line};
+use geo::{Coordinate, Line, LineString, Point};
 
 pub struct Ray {
     pub angle: f64,
@@ -32,7 +32,7 @@ impl Ray {
                 Coordinate {
                     x: position.x() + length * (center_angle + angle).cos(),
                     y: position.y() + length * (center_angle + angle).sin(),
-                }
+                },
             ),
         }
     }

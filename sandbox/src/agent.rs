@@ -1,7 +1,7 @@
-use geo::{LineString, Point, Coordinate};
-use crate::utils;
-use pyo3::prelude::*;
+use geo::{Coordinate, LineString, Point};
+
 use crate::ray::Ray;
+use pyo3::prelude::*;
 
 #[pyclass]
 pub(crate) struct Agent {
@@ -36,7 +36,25 @@ impl Agent {
 
     #[getter]
     fn get_rays(&self) -> PyResult<Vec<Vec<(f64, f64, f64, f64, f64, f64)>>> {
-        let as_tuples = self.rays.iter().map(|ray| ray.line_string.lines().map(|line| (line.start.x, line.start.y, line.end.x, line.end.y, ray.length, ray.angle)).collect()).collect();
+        let as_tuples = self
+            .rays
+            .iter()
+            .map(|ray| {
+                ray.line_string
+                    .lines()
+                    .map(|line| {
+                        (
+                            line.start.x,
+                            line.start.y,
+                            line.end.x,
+                            line.end.y,
+                            ray.length,
+                            ray.angle,
+                        )
+                    })
+                    .collect()
+            })
+            .collect();
         Ok(as_tuples)
     }
 

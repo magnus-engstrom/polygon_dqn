@@ -1,11 +1,11 @@
-use geo::{GeometryCollection, LineString, Geometry, Point, Polygon};
-use std::fs;
-use geojson::{GeoJson, quick_collection};
-use geo::map_coords::MapCoordsInplace;
 use crate::ray::Ray;
-use geo::intersects::Intersects;
 use geo::euclidean_distance::EuclideanDistance;
+use geo::intersects::Intersects;
+use geo::map_coords::MapCoordsInplace;
+use geo::{Geometry, GeometryCollection, LineString, Point, Polygon};
+use geojson::{quick_collection, GeoJson};
 use line_intersection::{LineInterval, LineRelation};
+use std::fs;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
     let geojson_str = fs::read_to_string(path).unwrap();
@@ -33,9 +33,7 @@ pub fn scale_line_strings(
     }
 }
 
-pub fn collection_as_line_strings(
-    mut collection: GeometryCollection<f64>,
-) -> Vec<LineString<f64>> {
+pub fn collection_as_line_strings(mut collection: GeometryCollection<f64>) -> Vec<LineString<f64>> {
     let mut lines: Vec<LineString<_>> = vec![];
     for i in collection.iter_mut() {
         match i {
@@ -71,7 +69,6 @@ pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f6
     let scaley = 1.0 * (ymax - ymin);
     (scalex, scaley, xmin, ymin, xmax, ymax)
 }
-
 
 pub fn cull_line_strings<'a>(
     rays: &Vec<Ray>,
@@ -127,10 +124,7 @@ pub fn find_intersections(
     }
 }
 
-fn intersections(
-    linestring1: &LineString<f64>,
-    linestring2: &LineString<f64>,
-) -> Vec<Point<f64>> {
+fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -> Vec<Point<f64>> {
     let mut intersections = vec![];
     if linestring1.0.is_empty() || linestring2.0.is_empty() {
         return vec![];

@@ -1,7 +1,7 @@
-use geo::LineString;
-use crate::utils;
-use pyo3::prelude::*;
 use crate::agent::Agent;
+use crate::utils;
+use geo::LineString;
+use pyo3::prelude::*;
 
 #[pyclass]
 pub(crate) struct Env {
@@ -26,11 +26,18 @@ impl Env {
         }
     }
 
-
-
     #[getter]
     fn get_line_strings(&self) -> PyResult<Vec<Vec<(f64, f64, f64, f64)>>> {
-        let as_tuples = self.line_strings.iter().map(|line_string| line_string.lines().map(|line| (line.start.x, line.start.y, line.end.x, line.end.y)).collect()).collect();
+        let as_tuples = self
+            .line_strings
+            .iter()
+            .map(|line_string| {
+                line_string
+                    .lines()
+                    .map(|line| (line.start.x, line.start.y, line.end.x, line.end.y))
+                    .collect()
+            })
+            .collect();
         Ok(as_tuples)
     }
 
