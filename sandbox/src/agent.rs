@@ -1,4 +1,4 @@
-use geo::{Coordinate, LineString, Point};
+use geo::Point;
 
 use crate::ray::Ray;
 use pyo3::prelude::*;
@@ -40,15 +40,17 @@ impl Agent {
         let mut res = vec![];
         for ray in self.rays.iter() {
             for line in ray.line_string.lines() {
-                let hashmap: HashMap<&str, f64> =
-                    [
-                        ("start_x", line.start.x),
-                        ("start_y", line.start.y),
-                        ("end_x", line.end.x),
-                        ("end_y", line.end.y),
-                        ("length", ray.length),
-                        ("angle", ray.angle),
-                    ].iter().cloned().collect();
+                let hashmap: HashMap<&str, f64> = [
+                    ("start_x", line.start.x),
+                    ("start_y", line.start.y),
+                    ("end_x", line.end.x),
+                    ("end_y", line.end.y),
+                    ("length", ray.length),
+                    ("angle", ray.angle),
+                ]
+                .iter()
+                .cloned()
+                .collect();
                 res.push(hashmap);
             }
         }

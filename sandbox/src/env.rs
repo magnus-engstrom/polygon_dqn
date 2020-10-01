@@ -32,13 +32,15 @@ impl Env {
         let mut res = vec![];
         for line_string in self.line_strings.iter() {
             for line in line_string.lines() {
-                let hashmap: HashMap<&str, f64> =
-                    [
-                        ("start_x", line.start.x),
-                        ("start_y", line.start.y),
-                        ("end_x", line.end.x),
-                        ("end_y", line.end.y),
-                    ].iter().cloned().collect();
+                let hashmap: HashMap<&str, f64> = [
+                    ("start_x", line.start.x),
+                    ("start_y", line.start.y),
+                    ("end_x", line.end.x),
+                    ("end_y", line.end.y),
+                ]
+                .iter()
+                .cloned()
+                .collect();
                 res.push(hashmap);
             }
         }
