@@ -75,6 +75,7 @@ pub fn cull_line_strings<'a>(
     line_strings: &'a Vec<LineString<f64>>,
     origin_position: Point<f64>,
 ) -> Vec<&'a LineString<f64>> {
+    let direction_ray = rays[(rays.len() as f64 / 2.0).floor() as usize];
     let polygon = Polygon::new(
         LineString::from(vec![
             origin_position.x_y(), // origin
@@ -88,6 +89,32 @@ pub fn cull_line_strings<'a>(
         ]),
         vec![],
     );
+
+    // if ray.coords[1][1] > ray.coords[0][1]:
+    //     lines = list(filter(lambda l: l[0][1] >= ray.coords[0][1] or l[1][1] >= ray.coords[0][1], lines))
+    // else:
+    //     lines = list(filter(lambda l: l[0][1] < ray.coords[0][1] or l[1][1] < ray.coords[0][1], lines))
+    // if ray.coords[1][0] > ray.coords[0][0]:
+    //     lines = list(filter(lambda l: l[0][0] > ray.coords[0][0] or l[1][0] > ray.coords[0][0], lines))
+    // else:
+    //     lines = list(filter(lambda l: l[0][0] < ray.coords[0][0] or l[1][0] < ray.coords[0][0], lines))
+
+    let mut possible_intersecting_line_strings = vec![];
+    let agent_y = origin_position.y();
+    for line_string in line_strings.iter() {
+        if agent_y > direction_ray.line.end.y { // agent is heading up
+            line_string.lines().fold(origin_position.y(), |acc, line|{
+                if line.start.y > agent_y || line.end.y > agent_y {
+
+                }
+            })
+        }        
+    }
+
+    // let mut possible_intersecting_line_strings = vec![];
+    // for line_string in line_strings.iter() {
+    //     origin_position.x_y()
+    // }   
 
     let mut intersecting_line_strings = vec![];
     for line_string in line_strings.iter() {

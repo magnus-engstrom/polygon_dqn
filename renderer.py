@@ -59,6 +59,6 @@ class Renderer:
         self.draw_3D(rays)
         pygame.display.update()
         pygame.display.flip()
-        #self.clock.tick(60)
+        self.clock.tick(120)
         self.frame_count += 1
         return self.frame_count 
