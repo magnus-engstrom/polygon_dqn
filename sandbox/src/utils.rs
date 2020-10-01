@@ -130,16 +130,16 @@ pub fn cull_line_strings_precull<'a>(
         let mut check = false;
         for line in line_string.lines() {
             if line.start.x > max_x && line.end.x > max_x {
-                break;
+                continue;
             }
             if line.start.y > max_y && line.end.y > max_y {
-                break;
+                continue;
             }
             if line.start.x < min_x && line.end.x < min_x {
-                break;
+                continue;
             }
             if line.start.y < min_y && line.end.y < min_y {
-                break;
+                continue;
             }
             check = true;
         }
