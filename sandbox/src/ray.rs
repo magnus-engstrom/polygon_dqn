@@ -1,4 +1,5 @@
-use geo::{Coordinate, Line, LineString, Point};
+use geo::{Coordinate, Line, LineString, Point, Rect};
+use crate::utils;
 
 pub struct Ray {
     pub angle: f64,
@@ -43,13 +44,24 @@ impl Ray {
         length: f64,
         direction: f64,
         position: Point<f64>,
-    ) -> Vec<Ray> {
+    ) -> (Vec<Ray>, Rect<f64>) {
+        let mut min_x = position.x();
+        let mut min_y = position.y();
+        let mut max_x = position.x();
+        let mut max_y = position.y();
+
         let mut rays = vec![];
         for i in 0..ray_count as i32 {
             let x = i as f64 / ray_count - 0.5;
             let angle = x.atan2(fov);
-            rays.push(Ray::new(angle, length, direction, position))
+            let ray = Ray::new(angle, length, direction, position);
+            let (tmp_min_x, tmp_min_y, tmp_max_x, tmp_max_y) = utils::min_max_point(&ray.line.end, min_x, min_y, max_x, max_y);
+            min_x = tmp_min_x;
+            min_y = tmp_min_y;
+            max_x = tmp_max_x;
+            max_y = tmp_max_y;
+            rays.push(ray)
         }
-        rays
+        (rays, Rect::new((min_x, min_y),(max_x, max_y)))
     }
 }

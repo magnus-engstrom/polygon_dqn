@@ -1,4 +1,4 @@
-use geo::Point;
+use geo::{Point, Rect};
 
 use crate::ray::Ray;
 use pyo3::prelude::*;
@@ -18,6 +18,7 @@ pub(crate) struct Agent {
     pub visibility: f64,
     pub position: Point<f64>,
     pub rays: Vec<Ray>,
+    pub rays_bb: Rect<f64>,
 }
 
 #[pymethods]
@@ -28,10 +29,11 @@ impl Agent {
             speed: 0.0004,
             direction,
             ray_count: 128.0,
-            fov: 0.45,
+            fov: 0.5,
             visibility: 0.6,
             position: Point::from(position),
             rays: vec![],
+            rays_bb:Rect::new((f64::NEG_INFINITY,f64::NEG_INFINITY),(f64::INFINITY,f64::INFINITY))
         }
     }
 
@@ -59,13 +61,15 @@ impl Agent {
 
     pub fn cast_rays(&mut self) {
         self.rays.clear();
-        self.rays = Ray::generate_rays(
+        let (rays, rays_bb) = Ray::generate_rays(
             self.ray_count,
             self.fov,
             self.visibility,
             self.direction,
             self.position,
         );
+        self.rays = rays;
+        self.rays_bb = rays_bb;
     }
 
     pub fn step(&mut self, direction_change: f64, speed: f64) {

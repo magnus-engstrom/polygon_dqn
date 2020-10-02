@@ -72,13 +72,11 @@ pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f6
 }
 
 pub fn cull_line_strings<'a>(
-    rays: &Vec<Ray>,
+    rays_bb: &Rect<f64>,
     line_strings: &'a Vec<LineString<f64>>,
     _origin_position: Point<f64>,
 ) -> Vec<&'a LineString<f64>> {
-    let (min_x, min_y, max_x, max_y) = min_max(&rays.iter().map(|ray| ray.line).collect(), true);
-    let bbox = Rect::new((min_x, min_y), (max_x, max_y)).to_polygon();
-
+    let bbox = rays_bb.to_polygon();
     let mut intersecting_line_strings = vec![];
     for line_string in line_strings.iter() {
         if bbox.intersects(line_string) {
@@ -88,8 +86,18 @@ pub fn cull_line_strings<'a>(
     intersecting_line_strings
 }
 
+
 #[inline(always)]
-pub fn min_max(lines: &Vec<Line<f64>>, shared_start: bool) -> (f64, f64, f64, f64) {
+pub fn min_max_point(coordinate: &Coordinate<f64>,
+                     min_x: f64,
+                     min_y: f64,
+                     max_x: f64,
+                     max_y: f64) -> (f64, f64, f64, f64) {
+    (min_x.min(coordinate.x), min_y.min(coordinate.y), max_x.max(coordinate.x), max_y.max(coordinate.y))
+}
+
+#[inline(always)]
+pub fn min_max_lines(lines: &Vec<Line<f64>>, shared_start: bool) -> (f64, f64, f64, f64) {
     let mut max_x = f64::NEG_INFINITY;
     let mut max_y = f64::NEG_INFINITY;
     let mut min_x = f64::INFINITY;
@@ -157,13 +165,13 @@ pub fn might_intersect_line_string(
 }
 
 pub fn cull_line_strings_precull<'a>(
-    rays: &Vec<Ray>,
+    rays_bb: &Rect<f64>,
     line_strings: &'a Vec<LineString<f64>>,
     _origin_position: Point<f64>,
 ) -> Vec<&'a LineString<f64>> {
-    let (min_x, min_y, max_x, max_y) = min_max(&rays.iter().map(|ray| ray.line).collect(), true);
-    let bbox = Rect::new((min_x, min_y), (max_x, max_y)).to_polygon();
-
+    let (min_x, min_y) = rays_bb.min().x_y();
+    let (max_x, max_y) = rays_bb.max().x_y();
+    let bbox = rays_bb.to_polygon();
     let mut intersecting_line_strings = vec![];
     for line_string in line_strings.iter() {
         if might_intersect_line_string(line_string, min_x, min_y, max_x, max_y)
@@ -229,36 +237,36 @@ mod tests {
     #[bench]
     fn test_culling_obstacles(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
-        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, _scalex, _scaley) =
             utils::import_line_strings("data/obstacles.json".into());
-        b.iter(|| utils::cull_line_strings(&mut rays, &line_strings, position));
+        b.iter(|| utils::cull_line_strings(&rays_bb, &line_strings, position));
     }
 
     #[bench]
     fn test_culling_obstacles_preculling(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
-        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, _scalex, _scaley) =
             utils::import_line_strings("data/obstacles.json".into());
-        b.iter(|| utils::cull_line_strings_precull(&mut rays, &line_strings, position));
+        b.iter(|| utils::cull_line_strings_precull(&rays_bb, &line_strings, position));
     }
 
     #[bench]
     fn test_culling_polygons(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
-        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, _scalex, _scaley) =
             utils::import_line_strings("data/polygons.json".into());
-        b.iter(|| utils::cull_line_strings(&mut rays, &line_strings, position));
+        b.iter(|| utils::cull_line_strings(&rays_bb, &line_strings, position));
     }
 
     #[bench]
     fn test_culling_polygons_preculling(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
-        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, _scalex, _scaley) =
             utils::import_line_strings("data/polygons.json".into());
-        b.iter(|| utils::cull_line_strings_precull(&mut rays, &line_strings, position));
+        b.iter(|| utils::cull_line_strings_precull(&rays_bb, &line_strings, position));
     }
 }
