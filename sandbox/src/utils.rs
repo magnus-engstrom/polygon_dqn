@@ -1,9 +1,9 @@
 use crate::ray::Ray;
-use geo::bounding_rect::BoundingRect;
+
 use geo::euclidean_distance::EuclideanDistance;
 use geo::intersects::Intersects;
 use geo::map_coords::MapCoordsInplace;
-use geo::{Geometry, GeometryCollection, LineString, Point, Polygon, Rect, Coordinate, Line};
+use geo::{Coordinate, Geometry, GeometryCollection, Line, LineString, Point, Polygon, Rect};
 use geojson::{quick_collection, GeoJson};
 use line_intersection::{LineInterval, LineRelation};
 use std::fs;
@@ -74,11 +74,10 @@ pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f6
 pub fn cull_line_strings<'a>(
     rays: &Vec<Ray>,
     line_strings: &'a Vec<LineString<f64>>,
-    origin_position: Point<f64>,
+    _origin_position: Point<f64>,
 ) -> Vec<&'a LineString<f64>> {
     let (min_x, min_y, max_x, max_y) = min_max(&rays.iter().map(|ray| ray.line).collect(), true);
     let bbox = Rect::new((min_x, min_y), (max_x, max_y)).to_polygon();
-
 
     let mut intersecting_line_strings = vec![];
     for line_string in line_strings.iter() {
@@ -89,9 +88,8 @@ pub fn cull_line_strings<'a>(
     intersecting_line_strings
 }
 
-
 #[inline(always)]
-pub fn min_max(lines: &Vec<Line<f64>>, shared_start: bool) -> (f64,f64,f64,f64) {
+pub fn min_max(lines: &Vec<Line<f64>>, shared_start: bool) -> (f64, f64, f64, f64) {
     let mut max_x = f64::NEG_INFINITY;
     let mut max_y = f64::NEG_INFINITY;
     let mut min_x = f64::INFINITY;
@@ -120,27 +118,39 @@ pub fn min_max(lines: &Vec<Line<f64>>, shared_start: bool) -> (f64,f64,f64,f64) 
 }
 
 #[inline(always)]
-pub fn might_intersect_line(line: &Line<f64>, min_x: f64, min_y: f64, max_x:f64, max_y:f64) -> bool {
+pub fn might_intersect_line(
+    line: &Line<f64>,
+    min_x: f64,
+    min_y: f64,
+    max_x: f64,
+    max_y: f64,
+) -> bool {
     if line.start.x > max_x && line.end.x > max_x {
-        return false
+        return false;
     }
     if line.start.y > max_y && line.end.y > max_y {
-        return false
+        return false;
     }
     if line.start.x < min_x && line.end.x < min_x {
-        return false
+        return false;
     }
     if line.start.y < min_y && line.end.y < min_y {
-        return false
+        return false;
     }
     true
 }
 
 #[inline(always)]
-pub fn might_intersect_line_string(line_string: &LineString<f64>, min_x: f64, min_y: f64, max_x:f64, max_y:f64) -> bool {
+pub fn might_intersect_line_string(
+    line_string: &LineString<f64>,
+    min_x: f64,
+    min_y: f64,
+    max_x: f64,
+    max_y: f64,
+) -> bool {
     for line in line_string.lines() {
         if might_intersect_line(&line, min_x, min_y, max_x, max_y) {
-            return true
+            return true;
         }
     }
     false
@@ -149,15 +159,16 @@ pub fn might_intersect_line_string(line_string: &LineString<f64>, min_x: f64, mi
 pub fn cull_line_strings_precull<'a>(
     rays: &Vec<Ray>,
     line_strings: &'a Vec<LineString<f64>>,
-    origin_position: Point<f64>,
+    _origin_position: Point<f64>,
 ) -> Vec<&'a LineString<f64>> {
-
     let (min_x, min_y, max_x, max_y) = min_max(&rays.iter().map(|ray| ray.line).collect(), true);
     let bbox = Rect::new((min_x, min_y), (max_x, max_y)).to_polygon();
 
     let mut intersecting_line_strings = vec![];
     for line_string in line_strings.iter() {
-        if might_intersect_line_string(line_string, min_x, min_y, max_x, max_y) && bbox.intersects(line_string) {
+        if might_intersect_line_string(line_string, min_x, min_y, max_x, max_y)
+            && bbox.intersects(line_string)
+        {
             intersecting_line_strings.push(line_string)
         }
     }
