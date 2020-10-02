@@ -233,8 +233,6 @@ mod tests {
         b.iter(|| utils::cull_line_strings_precull(&mut rays, &line_strings, position));
     }
 
-
-    /*
     #[bench]
     fn test_culling_polygons(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
@@ -243,5 +241,13 @@ mod tests {
             utils::import_line_strings("data/polygons.json".into());
         b.iter(|| utils::cull_line_strings(&mut rays, &line_strings, position));
     }
-     */
+
+    #[bench]
+    fn test_culling_polygons_preculling(b: &mut Bencher) {
+        let position = Point::new(0.5, 0.5);
+        let mut rays = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
+        let (line_strings, _scalex, _scaley) =
+            utils::import_line_strings("data/polygons.json".into());
+        b.iter(|| utils::cull_line_strings_precull(&mut rays, &line_strings, position));
+    }
 }
