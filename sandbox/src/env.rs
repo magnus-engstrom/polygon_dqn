@@ -1,12 +1,13 @@
 use crate::agent::Agent;
 use crate::utils;
-use geo::LineString;
+use geo::{LineString, Point};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
 #[pyclass]
 pub(crate) struct Env {
     pub line_strings: Vec<LineString<f64>>,
+    pub targets: Vec<Point<f64>>,
     #[pyo3(get, set)]
     scalex: f64,
     #[pyo3(get, set)]
@@ -17,9 +18,10 @@ pub(crate) struct Env {
 impl Env {
     #[new]
     fn new(path: String) -> Self {
-        let (line_strings, scalex, scaley) = utils::import_line_strings(path);
+        let (line_strings, targets, scalex, scaley) = utils::import_geometry(path);
         Env {
             line_strings,
+            targets,
             scalex,
             scaley,
         }
@@ -41,6 +43,22 @@ impl Env {
                 .collect();
                 res.push(hashmap);
             }
+        }
+        Ok(res)
+    }
+
+    #[getter(targets)]
+    fn get_targets_as_points(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+        let mut res = vec![];
+        for target in self.targets.iter() {
+            let hashmap: HashMap<&str, f64> = [
+                ("x", target.x()),
+                ("y", target.y()),
+            ]
+            .iter()
+            .cloned()
+            .collect();
+            res.push(hashmap);
         }
         Ok(res)
     }

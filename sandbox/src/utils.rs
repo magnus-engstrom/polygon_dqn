@@ -15,31 +15,36 @@ fn load_json(path: String) -> GeometryCollection<f64> {
     quick_collection(&geojson).unwrap()
 }
 
-pub fn import_line_strings(path: String) -> (Vec<LineString<f64>>, f64, f64) {
+pub fn import_geometry(path: String) -> (Vec<LineString<f64>>, Vec<Point<f64>>, f64, f64) {
     let collection = load_json(path);
-    let mut lines = collection_as_line_strings(collection);
+    let (mut lines, mut targets) = env_from_geometry(collection);
     let (scalex, scaley, xmin, ymin, _xmax, _ymax) = calculate_scales(&lines);
-    scale_line_strings(scalex, scaley, xmin, ymin, &mut lines);
-    (lines, scalex, scaley)
+    scale_geometry(scalex, scaley, xmin, ymin, &mut lines, &mut targets);
+    (lines, targets, scalex, scaley)
 }
 
-pub fn scale_line_strings(
+pub fn scale_geometry(
     scalex: f64,
     scaley: f64,
     xmin: f64,
     ymin: f64,
     lines: &mut Vec<LineString<f64>>,
+    targets: &mut Vec<Point<f64>>
 ) {
+    for point in targets.iter_mut() {
+        point.map_coords_inplace(|&(x, y)| ((x - xmin) / scalex, (y - ymin) / scaley));
+    }
     for line in lines.iter_mut() {
         line.map_coords_inplace(|&(x, y)| ((x - xmin) / scalex, (y - ymin) / scaley));
     }
 }
 
-pub fn collection_as_line_strings(mut collection: GeometryCollection<f64>) -> Vec<LineString<f64>> {
+pub fn env_from_geometry(mut collection: GeometryCollection<f64>) -> (Vec<LineString<f64>>, Vec<Point<f64>>) {
     let mut lines: Vec<LineString<_>> = vec![];
+    let mut points: Vec<Point<_>> = vec![];
     for i in collection.iter_mut() {
         match i {
-            Geometry::Point(_) => {}
+            Geometry::Point(ref x) => points.push(x.clone()),
             Geometry::Line(_) => {}
             Geometry::LineString(ref x) => lines.push(x.clone()),
             Geometry::Polygon(ref x) => lines.push(x.exterior().clone()),
@@ -51,7 +56,7 @@ pub fn collection_as_line_strings(mut collection: GeometryCollection<f64>) -> Ve
             Geometry::Triangle(_) => {}
         }
     }
-    lines
+    (lines, points)
 }
 
 pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f64, f64) {

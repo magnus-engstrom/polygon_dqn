@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     agent.cast_rays()
     rays = agent.rays
-
+    env_targets = env.targets
     while True:
         if min([r["length"] for r in rays]) < min_distance_to_obstacle:
             agent.step(random.random() / 2, slow_speed)
@@ -29,7 +29,7 @@ if __name__ == "__main__":
             agent.step(direction_change, speed)
         env.update_agent(agent)
         rays = agent.rays
-        renderer.draw(env_lines, rays)
+        renderer.draw(env_lines, rays, env_targets)
 
         time_diff = dt.datetime.today().timestamp() - start_time
         i += 1

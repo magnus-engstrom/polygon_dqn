@@ -42,20 +42,22 @@ class Renderer:
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
             offset += width - 1
 
-    def draw_2D(self, env_lines, rays):
+    def draw_2D(self, env_lines, rays, targets):
         for env_line in env_lines:
             start = (env_line["start_x"] * self.scale, env_line["start_y"] * self.scale)
             end = (env_line["end_x"] * self.scale, env_line["end_y"] * self.scale)
             pygame.draw.line(self.display, (200, 200, 200), start, end)
+        for target in targets:
+            pygame.draw.circle(self.display, (200, 150, 50), [target["x"] * self.scale, target["y"] * self.scale], 5)
         for ray in rays:
             start = (ray["start_x"] * self.scale, ray["start_y"] * self.scale)
             end = (ray["end_x"] * self.scale, ray["end_y"] * self.scale)
             pygame.draw.line(self.display, (255, 0, 0), start, end)
         pygame.draw.circle(self.display, (0, 255, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
 
-    def draw(self, env_lines, rays):
+    def draw(self, env_lines, rays, targets):
         self.display.fill((0, 0, 0))
-        self.draw_2D(env_lines, rays)
+        self.draw_2D(env_lines, rays, targets)
         self.draw_3D(rays)
         pygame.display.update()
         pygame.display.flip()
