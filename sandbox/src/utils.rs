@@ -9,6 +9,7 @@ use line_intersection::{LineInterval, LineRelation};
 use std::fs;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
+    let path = String::from(format!("sandbox/data/{}", path));
     let geojson_str = fs::read_to_string(path).unwrap();
     let geojson = geojson_str.parse::<GeoJson>().unwrap();
     quick_collection(&geojson).unwrap()
