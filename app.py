@@ -10,7 +10,6 @@ if __name__ == "__main__":
     env = Env("polygons.json")
     renderer = Renderer(500)
 
-    agent = Agent((0.5, 0.5), 0.0)
     direction_change = 0
 
     min_distance_to_obstacle = 0.01
@@ -19,8 +18,8 @@ if __name__ == "__main__":
 
     env_lines = env.lines
 
-    agent.cast_rays()
-    rays = agent.rays
+    #agent.cast_rays()
+    #rays = agent.rays
     env_targets = env.targets
     while True:
         if min([r["length"] for r in rays]) < min_distance_to_obstacle:

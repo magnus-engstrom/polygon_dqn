@@ -198,6 +198,21 @@ pub fn find_intersections_seq(
         .for_each(|ray| find_intersections(ray, line_strings, origin_position));
 }
 
+
+pub fn intersects(
+    ray: &Ray,
+    line_strings: &Vec<&LineString<f64>>,
+) -> bool {
+    for line in line_strings.iter() {
+        let intersections = intersections(&ray.line_string, line);
+        if intersections.len() > 0 {
+            return true
+        }
+    }
+    return false
+}
+
+
 pub fn find_intersections(
     ray: &mut Ray,
     line_strings: &Vec<&LineString<f64>>,

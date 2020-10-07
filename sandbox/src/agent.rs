@@ -24,7 +24,7 @@ pub(crate) struct Agent {
 #[pymethods]
 impl Agent {
     #[new]
-    fn new(position: (f64, f64), direction: f64) -> Self {
+    pub(crate) fn new(position: (f64, f64), direction: f64) -> Self {
         Agent {
             speed: 0.0004,
             direction,
@@ -72,9 +72,8 @@ impl Agent {
         self.rays_bb = rays_bb;
     }
 
-    pub fn step(&mut self, direction_change: f64, speed: f64) {
+    pub fn step(&mut self, direction_change: f64) {
         self.direction += direction_change;
-        self.speed = speed;
         self.position = Point::new(
             self.position.x() + self.speed * self.direction.cos(),
             self.position.y() + self.speed * self.direction.sin(),

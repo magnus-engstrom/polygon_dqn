@@ -14,7 +14,7 @@ impl Ray {
         Ray {
             angle,
             length,
-            max_length: 0.0,
+            max_length: length,
             line_string: LineString(vec![
                 Coordinate {
                     x: position.x(),
