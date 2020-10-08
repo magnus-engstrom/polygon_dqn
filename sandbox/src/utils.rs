@@ -3,10 +3,12 @@ use crate::ray::Ray;
 use geo::euclidean_distance::EuclideanDistance;
 use geo::intersects::Intersects;
 use geo::map_coords::MapCoordsInplace;
-use geo::{Coordinate, Geometry, GeometryCollection, Line, LineString, Point, Polygon, Rect};
+use geo::{Coordinate, Geometry, GeometryCollection, Line, LineString, Point, Polygon, Rect, Closest};
 use geojson::{quick_collection, GeoJson};
 use line_intersection::{LineInterval, LineRelation};
 use std::fs;
+use geo::closest_point::ClosestPoint;
+use geo::bearing::Bearing;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
     let path = String::from(format!("sandbox/data/{}", path));
@@ -229,6 +231,19 @@ pub fn find_intersections(
         }
     }
 }
+// Would be better to use agent_direction instead of "agent_step_ray_end"
+pub fn relative_bearing_to_target(agent_position: Point<f64>, agent_step_ray_end: Point<f64>, target_position: Point<f64>) -> f64 {
+    let target_bearing = agent_position.bearing(target_position);
+    let step_bearing = agent_position.bearing(agent_step_ray_end);
+    let d = target_bearing - step_bearing;
+    return (if d > 180.0 {
+        (-180.0 + d - 180.0)
+    } else if d < -180.0 {
+        (180.0 + d + 180.0)
+    } else {
+        d
+    }).to_radians()
+}
 
 fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -> Vec<Point<f64>> {
     let mut intersections = vec![];
@@ -248,6 +263,25 @@ fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -
     intersections
 }
 
+pub fn closest_of<C, I>(iter: I, p: Point<f64>) -> Option<Point<f64>>
+    where
+        I: IntoIterator<Item = C>,
+        C: ClosestPoint<f64>,
+{
+    let mut best = Closest::Indeterminate;
+
+    for line_segment in iter {
+        let got = line_segment.closest_point(&p);
+        best = got.best_of_two(&best, p);
+    }
+
+    match best {
+        Closest::Indeterminate => None,
+        Closest::Intersection(p) => Some(p),
+        Closest::SinglePoint(p) => Some(p),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ray::Ray;
@@ -259,8 +293,8 @@ mod tests {
     fn test_culling_obstacles(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) =
-            utils::import_line_strings("data/obstacles.json".into());
+        let (line_strings, points, _scalex, _scaley) =
+            utils::import_geometry("data/obstacles.json".into());
         b.iter(|| utils::cull_line_strings(&rays_bb, &line_strings, position));
     }
 
@@ -268,8 +302,8 @@ mod tests {
     fn test_culling_obstacles_preculling(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) =
-            utils::import_line_strings("data/obstacles.json".into());
+        let (line_strings, points, _scalex, _scaley) =
+            utils::import_geometry("data/obstacles.json".into());
         b.iter(|| utils::cull_line_strings_precull(&rays_bb, &line_strings, position));
     }
 
@@ -277,8 +311,8 @@ mod tests {
     fn test_culling_polygons(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) =
-            utils::import_line_strings("data/polygons.json".into());
+        let (line_strings, points, _scalex, _scaley) =
+            utils::import_geometry("data/polygons.json".into());
         b.iter(|| utils::cull_line_strings(&rays_bb, &line_strings, position));
     }
 
@@ -286,8 +320,8 @@ mod tests {
     fn test_culling_polygons_preculling(b: &mut Bencher) {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
-        let (line_strings, _scalex, _scaley) =
-            utils::import_line_strings("data/polygons.json".into());
+        let (line_strings, points, _scalex, _scaley) =
+            utils::import_geometry("data/polygons.json".into());
         b.iter(|| utils::cull_line_strings_precull(&rays_bb, &line_strings, position));
     }
 }

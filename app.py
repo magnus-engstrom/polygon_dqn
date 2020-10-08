@@ -1,5 +1,5 @@
 from renderer import Renderer
-from sandbox import Env, Agent
+from sandbox import Env
 import random
 
 import datetime as dt
@@ -18,17 +18,22 @@ if __name__ == "__main__":
 
     env_lines = env.lines
 
-    #agent.cast_rays()
-    #rays = agent.rays
+    rays = [999]
     env_targets = env.targets
     while True:
-        if min([r["length"] for r in rays]) < min_distance_to_obstacle:
-            agent.step(random.random() / 2, slow_speed)
-        else: 
-            agent.step(direction_change, speed)
-        env.update_agent(agent)
-        rays = agent.rays
-        renderer.draw(env_lines, rays, env_targets)
+        if min(rays) < min_distance_to_obstacle:
+            (state, reward, end) = env.step(random.randint(0, 4))
+        else:
+            (state, reward, end) = env.step(2)
+
+        if end:
+            env.reset()
+            rays = [999]
+            continue
+
+        target_distance, target_bearing, *rays = state
+
+        renderer.draw(env_lines, env.get_agent_rays(), env_targets)
 
         time_diff = dt.datetime.today().timestamp() - start_time
         i += 1

@@ -1,16 +1,19 @@
 use crate::agent::Agent;
 use crate::utils;
-use geo::{LineString, Point};
+use geo::{LineString, Point, Closest};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use crate::ray::Ray;
 use geo::euclidean_distance::EuclideanDistance;
+use geo::bearing::Bearing;
+use geo::closest_point::ClosestPoint;
 
 #[pyclass]
 pub(crate) struct Env {
     pub line_strings: Vec<LineString<f64>>,
     pub agent: Agent,
     pub targets: Vec<Point<f64>>,
+    pub last_state: Vec<f64>,
     #[pyo3(get, set)]
     scalex: f64,
     #[pyo3(get, set)]
@@ -27,6 +30,7 @@ impl Env {
             line_strings,
             agent,
             targets,
+            last_state: vec![],
             scalex,
             scaley,
         }
@@ -80,29 +84,48 @@ impl Env {
         };
         let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
-            let mut distance_to_closest_target = f64::INFINITY;
-            let mut x = 0.0;
-            let mut y = 0.0;
-            for target in self.targets.iter() {
-                let distance = self.agent.position.euclidean_distance(target);
-                if distance < distance_to_closest_target {
-                    distance_to_closest_target = distance;
-                    x = target.x();
-                    y = target.y();
-                }
-            }
-            let bearing = (y - self.agent.position.y()).atan2(x - self.agent.position.x());
-
-            let state = self.agent.rays.iter().map(|r| r.length / r.max_length).collect();
-            let reward = -2.0;
-            return (state, reward, true);
+            let state = self.last_state.iter().copied().collect();
+            return (state, -2.0, true);
         }
         self.agent.step(direction_change);
         self.update_agent();
 
-        let state = self.agent.rays.iter().map(|r| r.length / r.max_length).collect();
-        let reward = -2.0;
-        return (state, reward, true);
+        let state = self.get_state();
+        self.last_state = state.iter().copied().collect();
+        return (state, 0.25, false);
+    }
+    pub fn get_agent_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+        let mut res = vec![];
+        for ray in self.agent.rays.iter() {
+            for line in ray.line_string.lines() {
+                let hashmap: HashMap<&str, f64> = [
+                    ("start_x", line.start.x),
+                    ("start_y", line.start.y),
+                    ("end_x", line.end.x),
+                    ("end_y", line.end.y),
+                    ("length", ray.length),
+                    ("angle", ray.angle),
+                ]
+                    .iter()
+                    .cloned()
+                    .collect();
+                res.push(hashmap);
+            }
+        }
+        Ok(res)
+    }
+
+    pub fn get_state(&self) -> Vec<f64> {
+        let mut state = vec![];
+        let step_ray = Ray::new(0.0, self.agent.speed, self.agent.direction, self.agent.position);
+        let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
+        let distance_to_target = self.agent.position.euclidean_distance(&closest_target);
+        state.push(distance_to_target);
+        let relative_bearing_to_target = utils::relative_bearing_to_target(self.agent.position, step_ray.line.end_point(), closest_target);
+        state.push(relative_bearing_to_target);
+        let mut ray_lengths = self.agent.rays.iter().map(|r| r.length / r.max_length).collect();
+        state.append(&mut ray_lengths);
+        return state;
     }
 
     pub fn reset(&mut self) {
@@ -116,5 +139,29 @@ impl Env {
         let intersecting_line_strings =
             utils::cull_line_strings_precull(&mut self.agent.rays_bb, &self.line_strings, self.agent.position);
         utils::find_intersections_seq(&mut self.agent.rays, &intersecting_line_strings, self.agent.position)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use geo::Point;
+    use geo::bearing::Bearing;
+
+    #[test]
+    fn test_bearing() {
+        let agent_position = Point::new(0.0, 0.0);
+        let agent_step_ray_end = Point::new(-2.0, -2.0);
+        let target_position = Point::new(2.0, 0.0);
+
+        let target_bearing = agent_position.bearing(target_position);
+        let step_bearing = agent_position.bearing(agent_step_ray_end);
+        dbg!(target_bearing);
+        dbg!(step_bearing);
+        let d = target_bearing - step_bearing;
+        dbg!(d);
+        if d > 180.0 {
+            dbg!(-180.0 + d - 180.0);
+        } else if d < -180.0 {
+            dbg!(180.0 + d + 180.0);
+        }
     }
 }
