@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
         target_distance, target_bearing, *rays = state
 
-        renderer.draw(env_lines, env.get_agent_rays(), env_targets)
+        renderer.draw(env_lines, env.get_agent_rays(), env_targets, target_bearing, target_distance)
 
         time_diff = dt.datetime.today().timestamp() - start_time
         i += 1

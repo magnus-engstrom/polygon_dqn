@@ -23,24 +23,38 @@ class Renderer:
         floor.convert()
         self.assets["sky"] = pygame.transform.scale(floor, (500, 150))
 
-    def draw_3D(self, rays):
+    def draw_3D(self, rays, target_bearing, target_distance):
         offset = 500
-        width = 500 / len(rays)
+        screen_width = 500
+        width = screen_width / len(rays)
         screen_height = 300
         shading = 0
         color_max = 150
+        target_x = -1
         self.display.blit(self.assets["sky"], [500, 0, 500, 150])
         self.display.blit(self.assets["floor"], [500, 150, 500, 150])
         for i, ray in enumerate(rays):
-            #if not ray.max_length == ray.length:
+            #if int(i*width) < target_x or int(i*width) > target_x + 10:
             z = ray["length"] * math.cos(ray["angle"])
             wall_height = screen_height / z * 0.015
-            wall_height = min(wall_height, 300)
+            wall_height = min(wall_height, screen_height)
             top = (screen_height / 2) - (wall_height / 2)
             shading = color_max * (1 - z/self.agent_visibility)
             rect = [i + offset, top, width + 1, wall_height]
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
             offset += width - 1
+
+        if target_bearing >= rays[0]["angle"] and target_bearing <= rays[-1]["angle"]:
+            z = target_distance * math.cos(target_bearing)
+            wall_height = screen_height / z * 0.015
+            wall_height = min(wall_height, screen_height)
+            top = (screen_height / 2) - (wall_height / 2)
+            target_x = int((0.5 - (target_bearing / abs(rays[0]["angle"] - rays[-1]["angle"]))) * screen_width)
+            shading = color_max * (1 - z/self.agent_visibility)
+            for j in range(int((width*2)/z*0.1)):
+                if int(target_x/width)+j < len(rays) and rays[int(target_x/width)+j]["length"] > target_distance:
+                    rect = [screen_width + target_x + j, top, 1, wall_height]
+                    pygame.draw.rect(self.display, (shading, shading+100, shading), rect)
 
     def draw_2D(self, env_lines, rays, targets):
         for env_line in env_lines:
@@ -48,19 +62,22 @@ class Renderer:
             end = (env_line["end_x"] * self.scale, env_line["end_y"] * self.scale)
             pygame.draw.line(self.display, (200, 200, 200), start, end)
         for target in targets:
-            pygame.draw.circle(self.display, (200, 150, 50), [target["x"] * self.scale, target["y"] * self.scale], 5)
+            pygame.draw.circle(self.display, (50, 150, 50), [target["x"] * self.scale, target["y"] * self.scale], 5)
         for ray in rays:
             start = (ray["start_x"] * self.scale, ray["start_y"] * self.scale)
             end = (ray["end_x"] * self.scale, ray["end_y"] * self.scale)
             pygame.draw.line(self.display, (255, 0, 0), start, end)
-        pygame.draw.circle(self.display, (0, 255, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
+        pygame.draw.circle(self.display, (200, 200, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
 
-    def draw(self, env_lines, rays, targets):
+    def draw(self, env_lines, rays, targets, target_bearing, target_distance):
         self.display.fill((0, 0, 0))
         self.draw_2D(env_lines, rays, targets)
-        self.draw_3D(rays)
+        self.draw_3D(rays, target_bearing, target_distance)
         pygame.display.update()
         pygame.display.flip()
         self.clock.tick(120)
         self.frame_count += 1
         return self.frame_count 
+
+
+
