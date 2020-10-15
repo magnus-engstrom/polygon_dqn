@@ -7,7 +7,7 @@ import datetime as dt
 start_time = dt.datetime.today().timestamp()
 i = 0
 if __name__ == "__main__":
-    env = Env("polygons.json")
+    env = Env("sandbox/data/polygons.json")
     renderer = Renderer(500)
 
     direction_change = 0

@@ -11,7 +11,7 @@ use geo::closest_point::ClosestPoint;
 use geo::bearing::Bearing;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
-    let path = String::from(format!("sandbox/data/{}", path));
+    let path = String::from(format!("{}", path));
     let geojson_str = fs::read_to_string(path).unwrap();
     let geojson = geojson_str.parse::<GeoJson>().unwrap();
     quick_collection(&geojson).unwrap()
@@ -294,7 +294,7 @@ mod tests {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, points, _scalex, _scaley) =
-            utils::import_geometry("data/obstacles.json".into());
+            utils::import_geometry("../data/obstacles.json".into());
         b.iter(|| utils::cull_line_strings(&rays_bb, &line_strings, position));
     }
 
@@ -303,7 +303,7 @@ mod tests {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, points, _scalex, _scaley) =
-            utils::import_geometry("data/obstacles.json".into());
+            utils::import_geometry("../data/obstacles.json".into());
         b.iter(|| utils::cull_line_strings_precull(&rays_bb, &line_strings, position));
     }
 
@@ -312,7 +312,7 @@ mod tests {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, points, _scalex, _scaley) =
-            utils::import_geometry("data/polygons.json".into());
+            utils::import_geometry("../data/polygons.json".into());
         b.iter(|| utils::cull_line_strings(&rays_bb, &line_strings, position));
     }
 
@@ -321,7 +321,7 @@ mod tests {
         let position = Point::new(0.5, 0.5);
         let (mut rays, rays_bb) = Ray::generate_rays(180.0, 0.4, 0.3, 0.1, position);
         let (line_strings, points, _scalex, _scaley) =
-            utils::import_geometry("data/polygons.json".into());
+            utils::import_geometry("../data/polygons.json".into());
         b.iter(|| utils::cull_line_strings_precull(&rays_bb, &line_strings, position));
     }
 }
