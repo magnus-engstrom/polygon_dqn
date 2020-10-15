@@ -1,29 +1,23 @@
 use crate::agent::Agent;
 use crate::utils;
 use geo::{LineString, Point, Closest};
-use pyo3::prelude::*;
 use std::collections::HashMap;
 use crate::ray::Ray;
 use geo::euclidean_distance::EuclideanDistance;
 use geo::bearing::Bearing;
 use geo::closest_point::ClosestPoint;
 
-#[pyclass]
-pub(crate) struct Env {
+pub struct Env {
     pub line_strings: Vec<LineString<f64>>,
     pub agent: Agent,
     pub targets: Vec<Point<f64>>,
     pub last_state: Vec<f64>,
-    #[pyo3(get, set)]
     scalex: f64,
-    #[pyo3(get, set)]
     scaley: f64,
 }
 
-#[pymethods]
 impl Env {
-    #[new]
-    fn new(path: String) -> Self {
+    pub fn new(path: String) -> Self {
         let (line_strings, targets, scalex, scaley) = utils::import_geometry(path);
         let agent = Agent::new((0.5, 0.5), 0.1);
         Env {
@@ -37,8 +31,7 @@ impl Env {
     }
 
 
-    #[getter(lines)]
-    fn get_line_strings_as_lines(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+    pub fn get_line_strings_as_lines(&self) -> Vec<HashMap<&str, f64>> {
         let mut res = vec![];
         for line_string in self.line_strings.iter() {
             for line in line_string.lines() {
@@ -54,11 +47,10 @@ impl Env {
                 res.push(hashmap);
             }
         }
-        Ok(res)
+        res
     }
 
-    #[getter(targets)]
-    fn get_targets_as_points(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+    pub fn get_targets_as_points(&self) -> Vec<HashMap<&str, f64>> {
         let mut res = vec![];
         for target in self.targets.iter() {
             let hashmap: HashMap<&str, f64> = [
@@ -70,7 +62,7 @@ impl Env {
             .collect();
             res.push(hashmap);
         }
-        Ok(res)
+        res
     }
 
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
@@ -94,7 +86,8 @@ impl Env {
         self.last_state = state.iter().copied().collect();
         return (state, 0.25, false);
     }
-    pub fn get_agent_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
+
+    pub fn get_agent_rays(&self) -> Vec<HashMap<&str, f64>> {
         let mut res = vec![];
         for ray in self.agent.rays.iter() {
             for line in ray.line_string.lines() {
@@ -112,7 +105,7 @@ impl Env {
                 res.push(hashmap);
             }
         }
-        Ok(res)
+        res
     }
 
     pub fn get_state(&self) -> Vec<f64> {

@@ -2,6 +2,6 @@ set -e
 cd sandbox
 cargo build --release
 cd ..
-rm -f sandbox.so
-ln -s sandbox/target/release/libsandbox.so ./sandbox.so
+rm -f sandbox_py.so
+ln -s sandbox/target/release/libsandbox_py.so ./sandbox_py.so
 python3 app.py

@@ -1,5 +1,5 @@
 from renderer import Renderer
-from sandbox import Env
+from sandbox_py import Env
 import random
 
 import datetime as dt

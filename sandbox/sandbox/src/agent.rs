@@ -1,29 +1,20 @@
 use geo::{Point, Rect};
 
 use crate::ray::Ray;
-use pyo3::prelude::*;
 use std::collections::HashMap;
 
-#[pyclass]
-pub(crate) struct Agent {
-    #[pyo3(get, set)]
+pub struct Agent {
     pub speed: f64,
-    #[pyo3(get, set)]
     pub direction: f64,
-    #[pyo3(get, set)]
     pub ray_count: f64,
-    #[pyo3(get, set)]
     pub fov: f64,
-    #[pyo3(get, set)]
     pub visibility: f64,
     pub position: Point<f64>,
     pub rays: Vec<Ray>,
     pub rays_bb: Rect<f64>,
 }
 
-#[pymethods]
 impl Agent {
-    #[new]
     pub(crate) fn new(position: (f64, f64), direction: f64) -> Self {
         Agent {
             speed: 0.0004,
@@ -37,7 +28,7 @@ impl Agent {
         }
     }
 
-    #[getter]
+    /*
     fn get_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
         let mut res = vec![];
         for ray in self.rays.iter() {
@@ -58,6 +49,7 @@ impl Agent {
         }
         Ok(res)
     }
+    */
 
     pub fn cast_rays(&mut self) {
         self.rays.clear();
