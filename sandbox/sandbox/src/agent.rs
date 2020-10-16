@@ -1,7 +1,6 @@
 use geo::{Point, Rect};
 
 use crate::ray::Ray;
-use std::collections::HashMap;
 
 pub struct Agent {
     pub speed: f64,
@@ -27,29 +26,6 @@ impl Agent {
             rays_bb:Rect::new((f64::NEG_INFINITY,f64::NEG_INFINITY),(f64::INFINITY,f64::INFINITY))
         }
     }
-
-    /*
-    fn get_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
-        let mut res = vec![];
-        for ray in self.rays.iter() {
-            for line in ray.line_string.lines() {
-                let hashmap: HashMap<&str, f64> = [
-                    ("start_x", line.start.x),
-                    ("start_y", line.start.y),
-                    ("end_x", line.end.x),
-                    ("end_y", line.end.y),
-                    ("length", ray.length),
-                    ("angle", ray.angle),
-                ]
-                .iter()
-                .cloned()
-                .collect();
-                res.push(hashmap);
-            }
-        }
-        Ok(res)
-    }
-    */
 
     pub fn cast_rays(&mut self) {
         self.rays.clear();
