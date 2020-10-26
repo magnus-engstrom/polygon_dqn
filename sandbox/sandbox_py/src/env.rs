@@ -18,6 +18,10 @@ impl Env {
         }
     }
 
+    #[getter(action_space)]
+    fn get_action_space(&self) -> PyResult<Vec<f64>> {
+        Ok(self.env.action_space.clone())
+    }
 
     #[getter(lines)]
     fn get_line_strings_as_lines(&self) -> PyResult<Vec<HashMap<&str, f64>>> {

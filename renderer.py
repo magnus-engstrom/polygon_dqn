@@ -74,7 +74,7 @@ class Renderer:
         self.draw_2D(env_lines, rays, targets)
         self.draw_3D(rays, target_bearing, target_distance)
         pygame.display.update()
-        pygame.display.flip()
+        #pygame.display.flip()
         self.clock.tick(120)
         self.frame_count += 1
         return self.frame_count 

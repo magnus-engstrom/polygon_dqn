@@ -6,12 +6,15 @@ use crate::ray::Ray;
 use geo::euclidean_distance::EuclideanDistance;
 use geo::bearing::Bearing;
 use geo::closest_point::ClosestPoint;
+use rand::Rng;
 
 pub struct Env {
     pub line_strings: Vec<LineString<f64>>,
     pub agent: Agent,
     pub targets: Vec<Point<f64>>,
+    pub original_targets: Vec<Point<f64>>,
     pub last_state: Vec<f64>,
+    pub action_space: Vec<f64>,
     scalex: f64,
     scaley: f64,
 }
@@ -19,17 +22,26 @@ pub struct Env {
 impl Env {
     pub fn new(path: String) -> Self {
         let (line_strings, targets, scalex, scaley) = utils::import_geometry(path);
-        let agent = Agent::new((0.5, 0.5), 0.1);
+        let agent = Agent::new((0.5, 0.5), 0.4);
+        let original_targets = targets.to_vec();
+        let action_space = vec![
+            -1.0f64.to_radians(),
+            -10.0f64.to_radians(),
+            0.0f64.to_radians(),
+            10.0f64.to_radians(),
+            1.0f64.to_radians()
+        ];
         Env {
             line_strings,
             agent,
             targets,
+            original_targets,
             last_state: vec![],
             scalex,
             scaley,
+            action_space,
         }
     }
-
 
     pub fn get_line_strings_as_lines(&self) -> Vec<HashMap<&str, f64>> {
         let mut res = vec![];
@@ -66,25 +78,33 @@ impl Env {
     }
 
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
-        let direction_change = match action {
-            0 => -90.0f64.to_radians(),
-            1 => -45.0f64.to_radians(),
-            2 => 0.0f64.to_radians(),
-            3 => 45.0f64.to_radians(),
-            4 => 90.0f64.to_radians(),
-            _ => panic!("Action should be between 0-4"),
-        };
+        let mut reward = -0.002;
+        let mut rng = rand::thread_rng();
+        let direction_change = self.action_space.get(action as usize).unwrap().clone();
         let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
             let state = self.last_state.iter().copied().collect();
+            println!("iteration ended");
             return (state, -2.0, true);
         }
         self.agent.step(direction_change);
         self.update_agent();
 
         let state = self.get_state();
+
+        if state[0] < 0.01 {
+            reward = 2.0;
+            let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
+            self.targets = self.targets.iter().filter(|p| **p != closest_target).cloned().collect();
+            if self.targets.len() < 1 {
+                self.targets = self.original_targets.to_vec();
+            }
+            println!("target found");
+            //self.targets.push(Point::new(rng.gen_range(0.0, 1.0), rng.gen_range(0.0, 1.0)));
+        }
+
         self.last_state = state.iter().copied().collect();
-        return (state, 0.25, false);
+        return (state, reward, false);
     }
 
     pub fn get_agent_rays(&self) -> Vec<HashMap<&str, f64>> {
@@ -125,6 +145,7 @@ impl Env {
         let mut agent = Agent::new((0.5, 0.5), 0.1);
         agent.cast_rays();
         self.agent = agent;
+        self.targets = self.original_targets.to_vec();
         self.update_agent();
     }
 
