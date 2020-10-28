@@ -25,11 +25,11 @@ impl Env {
         let agent = Agent::new((0.5, 0.5), 0.4);
         let original_targets = targets.to_vec();
         let action_space = vec![
-            -1.0f64.to_radians(),
-            -10.0f64.to_radians(),
+            -5.0f64.to_radians(),
+            //-10.0f64.to_radians(),
             0.0f64.to_radians(),
-            10.0f64.to_radians(),
-            1.0f64.to_radians()
+            //10.0f64.to_radians(),
+            5.0f64.to_radians()
         ];
         Env {
             line_strings,
@@ -81,6 +81,9 @@ impl Env {
         let mut reward = -0.002;
         let mut rng = rand::thread_rng();
         let direction_change = self.action_space.get(action as usize).unwrap().clone();
+        if direction_change != 0.0 {
+            reward -= 0.002;
+        }
         let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
             let state = self.last_state.iter().copied().collect();

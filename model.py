@@ -60,8 +60,8 @@ class Model:
     def create_neural_network(self, n_features, n_actions):
         model = Sequential()
         model.add(InputLayer(batch_input_shape=(1, n_features)))
-        model.add(Dense(256, activation='relu'))
-        model.add(Dense(256, activation='relu'))
+        model.add(Dense(512, activation='relu'))
+        model.add(Dense(512, activation='relu'))
         model.add(Dense(n_actions, activation='linear'))
         model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
         return model

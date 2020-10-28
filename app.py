@@ -19,9 +19,9 @@ if __name__ == "__main__":
     old_state = None
     agg_reward = 0
     render = False
-    render_countdown = 5
+    render_countdown = 10
     while True:
-        if (not render or agg_reward < -3.0) and (random.uniform(0,1) <= model.epsilon or not model.training_started or not old_state):
+        if not render and (random.uniform(0, 1) <= model.epsilon or not model.training_started or not old_state):
             # random movement
             action = random.randint(0, n_actions-1)
         else:
@@ -34,6 +34,9 @@ if __name__ == "__main__":
         (state, reward, end) = env.step(action)
         if not end:
             agg_reward += reward
+            if agg_reward < -5:
+                reward -= 5
+                end = True
         if old_state:
             episode_memory.append([
                 np.array(old_state).reshape(-1, len(old_state)), 
@@ -54,10 +57,12 @@ if __name__ == "__main__":
             agg_reward = 0
             if render_countdown < 1:
                 render = True
-                render_countdown = 5
+                render_countdown = 10
             else:
                 render = False
             render_countdown -= 1
+            print("render countdown", render_countdown)
+            print("epsilon", model.epsilon)
             continue
 
         target_distance, target_bearing, *rays = state
