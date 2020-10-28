@@ -33,6 +33,11 @@ impl Env {
         Ok(self.env.get_targets_as_points())
     }
 
+    #[getter(ray_count)]
+    fn get_ray_count(&self) -> PyResult<f64> {
+        Ok(self.env.agent.ray_count)
+    }
+
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
         self.env.step(action)
     }
@@ -40,8 +45,9 @@ impl Env {
         Ok(self.env.get_agent_rays())
     }
 
-    pub fn get_state(&self) -> Vec<f64> {
-        self.env.get_state()
+    pub fn get_state(&mut self) -> Vec<f64> {
+        let (state, _) = &mut self.env.get_state();
+        return state.clone()
     }
 
     pub fn reset(&mut self) {

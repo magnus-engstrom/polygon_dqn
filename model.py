@@ -9,20 +9,23 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Activation
 from tensorflow.keras.layers import BatchNormalization
 import numpy as np
+from tb import ModifiedTensorBoard
 
 class Model:
-    def __init__(self, n_actions):
+    def __init__(self, n_actions, n_features):
         self.total_memory = deque(maxlen=50000)
-        self.min_batch_samples = 10
+        self.min_batch_samples = 100
         self.training_started = False
-        self.epsilon = 0.9
+        self.epsilon = 1
         self.epsilon_decay = 0.995
         self.batch_size = 64
         self.model = None
         self.n_actions = n_actions
-        self.discount = 0.98
-        self.n_features = 34
+        self.discount = 0.99
+        self.n_features = n_features
         self.training_count = 0
+        self.name = "model_test_3"
+        self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
     def store_memory_and_train(self, episode_memory):
         self.total_memory += episode_memory
@@ -30,7 +33,7 @@ class Model:
         if len(self.total_memory) >= self.batch_size * self.min_batch_samples:
             if not self.model:
                 print("creating model")
-                print((1, len(episode_memory[0][0])))
+                print((1, episode_memory[-1][0][0]))
                 self.model = self.create_neural_network(self.n_features, self.n_actions)
                 self.target_model = self.create_neural_network(self.n_features, self.n_actions)
                 self.target_model.set_weights(self.model.get_weights())
@@ -38,10 +41,11 @@ class Model:
             self.__train()
             self.epsilon *= self.epsilon_decay
             print(self.training_count)
-            if self.training_count % 20 == 0: 
+            if self.training_count % 5 == 0: 
                 print("updating target model")
                 self.target_model.set_weights(self.model.get_weights())
             self.training_count += 1
+            print(self.epsilon)
 
     def predict_action(self, state):
         return np.argmax(self.model.predict(state.reshape(-1, len(state))))
@@ -55,7 +59,7 @@ class Model:
                 target = reward + self.discount * np.max(self.target_model.predict(new_state))
             target_vec = self.model.predict(old_state)[0]
             target_vec[action] = target
-            self.model.fit(old_state, target_vec.reshape(-1, self.n_actions), epochs=1, verbose=0)
+            self.model.fit(old_state, target_vec.reshape(-1, self.n_actions), epochs=1, verbose=0, callbacks=[self.tensorboard_callback])
 
     def create_neural_network(self, n_features, n_actions):
         model = Sequential()

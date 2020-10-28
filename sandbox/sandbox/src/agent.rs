@@ -16,11 +16,11 @@ pub struct Agent {
 impl Agent {
     pub(crate) fn new(position: (f64, f64), direction: f64) -> Self {
         Agent {
-            speed: 0.0008,
+            speed: 0.0001,
             direction,
-            ray_count: 32.0,
+            ray_count: 15.0,
             fov: 0.5,
-            visibility: 0.6,
+            visibility: 0.5,
             position: Point::from(position),
             rays: vec![],
             rays_bb:Rect::new((f64::NEG_INFINITY,f64::NEG_INFINITY),(f64::INFINITY,f64::INFINITY))

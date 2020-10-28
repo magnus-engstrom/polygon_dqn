@@ -3,37 +3,43 @@ from sandbox_py import Env
 from model import Model
 import numpy as np
 import random
+import pygame
 
 import datetime as dt
 
 start_time = dt.datetime.today().timestamp()
 i = 0
+
+def handle_input():
+    ret = set()
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            if pygame.key.get_focused():
+                if event.key == pygame.K_r:
+                    ret.add(event.key)
+    return ret
+
 if __name__ == "__main__":
     env = Env("sandbox/data/polygons.json")
     renderer = Renderer(500)
     env_lines = env.lines
     rays = [999]
     n_actions = len(env.action_space)
-    model = Model(n_actions)
+    model = Model(n_actions, int(env.ray_count+2))
     episode_memory = []
     old_state = None
     agg_reward = 0
     render = False
-    render_countdown = 5
     while True:
-        if (not render or agg_reward < -3.0) and (random.uniform(0,1) <= model.epsilon or not model.training_started or not old_state):
-            # random movement
-            action = random.randint(0, n_actions-1)
+        keys = handle_input()
+        if pygame.K_r in keys:
+            render = True
+        if (render or random.uniform(0,1) <= model.epsilon) and model.training_started and old_state != None and agg_reward < -3:
+            action = model.predict_action(np.array(old_state))
         else:
-            # model movement
-            if not old_state:
-                action = 1
-            else:
-                action = model.predict_action(np.array(old_state))
-        
+            action = random.randint(0, n_actions-1)
         (state, reward, end) = env.step(action)
-        if not end:
-            agg_reward += reward
+        agg_reward += reward
         if old_state:
             episode_memory.append([
                 np.array(old_state).reshape(-1, len(old_state)), 
@@ -52,12 +58,7 @@ if __name__ == "__main__":
             episode_memory = []
             old_state = None
             agg_reward = 0
-            if render_countdown < 1:
-                render = True
-                render_countdown = 5
-            else:
-                render = False
-            render_countdown -= 1
+            render = False
             continue
 
         target_distance, target_bearing, *rays = state
@@ -67,3 +68,4 @@ if __name__ == "__main__":
         time_diff = dt.datetime.today().timestamp() - start_time
         i += 1
         if i % 100 == 0: print(i / time_diff)
+        
