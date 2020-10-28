@@ -92,13 +92,17 @@ impl Env {
             println!("iteration ended");
             return (state, -3.0, true);
         }
+        step_ray = Ray::new(direction_change, self.agent.speed*5.0, self.agent.direction, self.agent.position);
+        if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
+            reward = -1.5
+        }
         self.agent.step(direction_change);
         self.update_agent();
 
         let (state ,target_in_sight) = self.get_state();
 
         if target_in_sight {
-            reward = 0.01;
+            reward = reward + 0.01;
         }
 
         if state[0] < 0.01 {

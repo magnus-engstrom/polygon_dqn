@@ -54,11 +54,13 @@ if __name__ == "__main__":
             rays = [999]
             print("total reward", agg_reward)
             if not render:
-                model.store_memory_and_train(episode_memory)
+                model.store_memory_and_train(episode_memory, agg_reward/len(episode_memory))
             episode_memory = []
             old_state = None
             agg_reward = 0
             render = False
+            if i % 20 == 0:
+                render = True
             continue
 
         target_distance, target_bearing, *rays = state
@@ -68,4 +70,5 @@ if __name__ == "__main__":
         time_diff = dt.datetime.today().timestamp() - start_time
         i += 1
         if i % 100 == 0: print(i / time_diff)
+
         

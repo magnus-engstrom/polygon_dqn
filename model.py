@@ -13,8 +13,8 @@ from tb import ModifiedTensorBoard
 
 class Model:
     def __init__(self, n_actions, n_features):
-        self.total_memory = deque(maxlen=50000)
-        self.min_batch_samples = 100
+        self.total_memory = deque(maxlen=100000)
+        self.min_batch_samples = 200
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.995
@@ -24,10 +24,10 @@ class Model:
         self.discount = 0.99
         self.n_features = n_features
         self.training_count = 0
-        self.name = "model_test_3"
+        self.name = "model_test_6"
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
-    def store_memory_and_train(self, episode_memory):
+    def store_memory_and_train(self, episode_memory, reward_per_step):
         self.total_memory += episode_memory
         print(len(self.total_memory), "rows in memory")
         if len(self.total_memory) >= self.batch_size * self.min_batch_samples:
@@ -38,10 +38,13 @@ class Model:
                 self.target_model = self.create_neural_network(self.n_features, self.n_actions)
                 self.target_model.set_weights(self.model.get_weights())
             self.training_started = True
+            self.tensorboard_callback.update_stats(
+                reward_per_step=reward_per_step
+            )
             self.__train()
             self.epsilon *= self.epsilon_decay
             print(self.training_count)
-            if self.training_count % 5 == 0: 
+            if self.training_count % 10 == 0: 
                 print("updating target model")
                 self.target_model.set_weights(self.model.get_weights())
             self.training_count += 1
@@ -67,5 +70,5 @@ class Model:
         model.add(Dense(256, activation='relu'))
         model.add(Dense(256, activation='relu'))
         model.add(Dense(n_actions, activation='linear'))
-        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
+        model.compile(loss="mse", optimizer=Adam(lr=0.0007), metrics=['accuracy'])
         return model
