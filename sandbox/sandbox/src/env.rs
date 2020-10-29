@@ -92,9 +92,9 @@ impl Env {
             println!("iteration ended");
             return (state, -3.0, true);
         }
-        step_ray = Ray::new(direction_change, self.agent.speed*5.0, self.agent.direction, self.agent.position);
-        if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
-            reward = -1.5
+        let proximity_ray = Ray::new(direction_change, self.agent.speed*10.0, self.agent.direction, self.agent.position);
+        if utils::intersects(&proximity_ray, &self.line_strings.iter().collect()) {
+            reward = -2.0;
         }
         self.agent.step(direction_change);
         self.update_agent();

@@ -24,7 +24,7 @@ class Model:
         self.discount = 0.99
         self.n_features = n_features
         self.training_count = 0
-        self.name = "model_test_6"
+        self.name = "model_test_7"
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
     def store_memory_and_train(self, episode_memory, reward_per_step):
