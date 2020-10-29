@@ -34,7 +34,7 @@ if __name__ == "__main__":
         keys = handle_input()
         if pygame.K_r in keys:
             render = True
-        if (render or random.uniform(0,1) <= model.epsilon) and model.training_started and old_state != None and agg_reward < -3:
+        if (render or random.uniform(0,1) <= model.epsilon) and model.training_started and old_state != None and agg_reward < -10:
             action = model.predict_action(np.array(old_state))
         else:
             action = random.randint(0, n_actions-1)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
         target_distance, target_bearing, *rays = state
         if render:
-            renderer.draw(env_lines, env.get_agent_rays(), env.targets, target_bearing, target_distance)
+            renderer.draw(env_lines, env.get_agent_rays(), env.targets, target_bearing, target_distance, reward, agg_reward)
 
         time_diff = dt.datetime.today().timestamp() - start_time
         i += 1

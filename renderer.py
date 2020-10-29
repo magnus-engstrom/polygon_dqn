@@ -11,6 +11,9 @@ class Renderer:
         self.display=pygame.display.set_mode((500 + 500, res))
         self.clock = pygame.time.Clock()
         self.prepare_assets_3D()
+        pygame.font.init() # you have to call this at the start, 
+                   # if you want to use this module.
+        self.font_display = pygame.font.SysFont('Arial', 50)
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
@@ -69,15 +72,22 @@ class Renderer:
             pygame.draw.line(self.display, (255, 0, 0), start, end)
         pygame.draw.circle(self.display, (200, 200, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
 
-    def draw(self, env_lines, rays, targets, target_bearing, target_distance):
+    def draw_reward(self, reward, agg_reward):
+        textsurface = self.font_display.render(str(reward), False, (255, 255, 255))
+        self.display.blit(textsurface,(650,350))
+        textsurface = self.font_display.render(str(agg_reward), False, (150, 150, 150))
+        self.display.blit(textsurface,(650,420))
+
+    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, agg_reward):
         self.display.fill((0, 0, 0))
         self.draw_2D(env_lines, rays, targets)
         self.draw_3D(rays, target_bearing, target_distance)
+        self.draw_reward(reward, agg_reward)
         pygame.display.update()
         #pygame.display.flip()
-        self.clock.tick(120)
+        self.clock.tick(32)
         self.frame_count += 1
-        return self.frame_count 
+        return self.frame_count
 
 
 

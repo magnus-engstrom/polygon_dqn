@@ -30,11 +30,9 @@ impl Env {
         );
         let original_targets = targets.to_vec();
         let action_space = vec![
-            -10.0f64.to_radians(),
-            -1.0f64.to_radians(),
+            -5.0f64.to_radians(),
             0.0f64.to_radians(),
-            1.0f64.to_radians(),
-            10.0f64.to_radians(),
+            5.0f64.to_radians(),
         ];
         Env {
             line_strings,
@@ -92,9 +90,9 @@ impl Env {
             println!("iteration ended");
             return (state, -3.0, true);
         }
-        let proximity_ray = Ray::new(direction_change, self.agent.speed*10.0, self.agent.direction, self.agent.position);
+        let proximity_ray = Ray::new(direction_change, self.agent.speed*20.0, self.agent.direction, self.agent.position);
         if utils::intersects(&proximity_ray, &self.line_strings.iter().collect()) {
-            reward = -2.0;
+            reward = -0.1;
         }
         self.agent.step(direction_change);
         self.update_agent();
