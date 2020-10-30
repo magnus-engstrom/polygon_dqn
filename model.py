@@ -18,13 +18,13 @@ class Model:
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.995
-        self.batch_size = 64
+        self.batch_size = 32
         self.model = None
         self.n_actions = n_actions
-        self.discount = 0.99
+        self.discount = 0.993
         self.n_features = n_features
         self.training_count = 0
-        self.name = "model_test_7"
+        self.name = "model_test_31"
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
     def store_memory_and_train(self, episode_memory, reward_per_step):
@@ -43,12 +43,10 @@ class Model:
             )
             self.__train()
             self.epsilon *= self.epsilon_decay
-            print(self.training_count)
             if self.training_count % 10 == 0: 
-                print("updating target model")
+                print("### updating target model ###")
                 self.target_model.set_weights(self.model.get_weights())
             self.training_count += 1
-            print(self.epsilon)
 
     def predict_action(self, state):
         return np.argmax(self.model.predict(state.reshape(-1, len(state))))
@@ -67,8 +65,8 @@ class Model:
     def create_neural_network(self, n_features, n_actions):
         model = Sequential()
         model.add(InputLayer(batch_input_shape=(1, n_features)))
-        model.add(Dense(256, activation='relu'))
-        model.add(Dense(256, activation='relu'))
+        model.add(Dense(512, activation='relu'))
+        model.add(Dense(512, activation='relu'))
         model.add(Dense(n_actions, activation='linear'))
-        model.compile(loss="mse", optimizer=Adam(lr=0.0007), metrics=['accuracy'])
+        model.compile(loss="mse", optimizer=Adam(lr=0.005), metrics=['accuracy'])
         return model
