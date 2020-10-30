@@ -25,6 +25,8 @@ class Model:
         self.n_features = n_features
         self.training_count = 0
         self.name = "model_test_31"
+        self.min_learning_rate = 0.0004
+        self.learning_rate = 0.005
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
     def store_memory_and_train(self, episode_memory, reward_per_step):
@@ -46,6 +48,9 @@ class Model:
             if self.training_count % 10 == 0: 
                 print("### updating target model ###")
                 self.target_model.set_weights(self.model.get_weights())
+                if self.learning_rate > self.min_learning_rate:
+                    self.learning_rate *= 0.99
+                    K.set_value(self.model.optimizer.learning_rate, self.learning_rate)
             self.training_count += 1
 
     def predict_action(self, state):
@@ -68,5 +73,5 @@ class Model:
         model.add(Dense(512, activation='relu'))
         model.add(Dense(512, activation='relu'))
         model.add(Dense(n_actions, activation='linear'))
-        model.compile(loss="mse", optimizer=Adam(lr=0.005), metrics=['accuracy'])
+        model.compile(loss="mse", optimizer=Adam(lr=self.learning_rate), metrics=['accuracy'])
         return model

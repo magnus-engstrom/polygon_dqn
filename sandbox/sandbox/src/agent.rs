@@ -16,7 +16,7 @@ pub struct Agent {
 impl Agent {
     pub(crate) fn new(position: (f64, f64), direction: f64) -> Self {
         Agent {
-            speed: 0.003,
+            speed: 0.004,
             direction,
             ray_count: 15.0,
             fov: 0.5,
