@@ -14,11 +14,11 @@ from tb import ModifiedTensorBoard
 class Model:
     def __init__(self, n_actions, n_features):
         self.total_memory = deque(maxlen=100000)
-        self.min_batch_samples = 200
+        self.min_batch_samples = 500
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.995
-        self.batch_size = 32
+        self.batch_size = 64
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.993
