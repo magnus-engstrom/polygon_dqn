@@ -1,0 +1,431 @@
+{
+    "type": "FeatureCollection",
+    "features": [{
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.137393, 60.679589],
+                    [17.137436, 60.676835],
+                    [17.14246, 60.679483],
+                    [17.137393, 60.679589]
+                ]
+            ]
+        },
+        "id": "0c9f843b-b5f9-4e2d-908f-f3be49487253"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.158475, 60.68064],
+                    [17.154568, 60.67961],
+                    [17.156586, 60.677971],
+                    [17.158475, 60.68064]
+                ]
+            ]
+        },
+        "id": "1afa51f8-3252-482a-a53a-62b1b60f489b"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.155384, 60.67568],
+                    [17.15182, 60.675575],
+                    [17.151777, 60.674524],
+                    [17.150103, 60.673998],
+                    [17.15431, 60.672422],
+                    [17.155384, 60.67568]
+                ]
+            ]
+        },
+        "id": "64b42396-6b26-485d-a5f7-776cb78b4acb"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.151391, 60.680745],
+                    [17.148385, 60.680135],
+                    [17.148342, 60.67858],
+                    [17.15006, 60.679379],
+                    [17.151391, 60.680745]
+                ]
+            ]
+        },
+        "id": "964e567d-3cb0-4822-a72f-b5878792f9c5"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.143662, 60.67217],
+                    [17.142803, 60.67301],
+                    [17.139669, 60.672506],
+                    [17.143662, 60.67217]
+                ]
+            ]
+        },
+        "id": "2fe2bb01-21b8-4450-85e0-8d871cf64821"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.160417, 60.677466],
+                    [17.158217, 60.676626],
+                    [17.160417, 60.675932],
+                    [17.160417, 60.677445],
+                    [17.160417, 60.677466]
+                ]
+            ]
+        },
+        "id": "2b3ca410-2826-437f-90c5-b82684180252"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Rectangle",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.14392, 60.677655],
+                    [17.145122, 60.677655],
+                    [17.145122, 60.678496],
+                    [17.14392, 60.678496],
+                    [17.14392, 60.677655]
+                ]
+            ]
+        },
+        "id": "7f8c00d8-9d2b-41f1-ab46-bfffe69b750d"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Rectangle",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.146067, 60.672779],
+                    [17.147741, 60.672779],
+                    [17.147741, 60.673599],
+                    [17.146067, 60.673599],
+                    [17.146067, 60.672779]
+                ]
+            ]
+        },
+        "id": "75352f58-0a8a-440b-a974-37a9a51d9beb"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Rectangle",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.158947, 60.672233],
+                    [17.160417, 60.672233],
+                    [17.160417, 60.672989],
+                    [17.158947, 60.672989],
+                    [17.158947, 60.672233]
+                ]
+            ]
+        },
+        "id": "996f176a-82c2-464c-8d4d-65e234d99b47"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Rectangle",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.137394, 60.671413],
+                    [17.138038, 60.671413],
+                    [17.138038, 60.673473],
+                    [17.137394, 60.673473],
+                    [17.137394, 60.671413]
+                ]
+            ]
+        },
+        "id": "c53fc1d7-50d7-4fbf-86e0-40d25227b227"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Rectangle",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.139712, 60.674902],
+                    [17.140485, 60.674902],
+                    [17.140485, 60.676605],
+                    [17.139712, 60.676605],
+                    [17.139712, 60.674902]
+                ]
+            ]
+        },
+        "id": "e4fc6393-8a56-4236-b793-b3c71b372607"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.139277, 60.680303]
+        },
+        "id": "29e0a657-b5e5-477b-8256-cd9185b70337"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.143104, 60.676668]
+        },
+        "id": "ac4bed87-57ea-405e-8187-22dc317e71fb"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.143963, 60.671812]
+        },
+        "id": "ae617ee0-632c-4b72-9339-afa08e8379b9"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.139025, 60.671833]
+        },
+        "id": "12ce1e00-5274-4665-9805-c8c3d3490256"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.138682, 60.675091]
+        },
+        "id": "c3ef7759-549a-4ae4-9a3f-3609b5cd72cb"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.150145, 60.672254]
+        },
+        "id": "049de53f-6cb7-4541-af5f-6aa88b98aeb4"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.156886, 60.672779]
+        },
+        "id": "fc2e18a8-4ac4-4653-a687-bf78776d71e1"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.158819, 60.677971]
+        },
+        "id": "f1dfb980-8cd6-4cc6-b8df-af8a4e912837"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.153838, 60.680535]
+        },
+        "id": "0d450a88-8a45-4887-ae20-e66ed739dba3"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.147226, 60.680661]
+        },
+        "id": "0945ef93-ae94-430c-8d96-6b92c2336276"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.153709, 60.67671]
+        },
+        "id": "c6b94aed-6254-4d42-a432-f00af11605c0"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.152664, 60.679295]
+        },
+        "id": "d706ba28-0ed5-401e-89b0-53e16b24ffdf"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.142589, 60.680282]
+        },
+        "id": "bbfbef2a-38e1-4f81-90cc-714d2889e543"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Marker",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Point",
+            "coordinates": [17.149888, 60.674902]
+        },
+        "id": "8c9679b9-efdb-4a00-92a3-b4f8a53a9b44"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Rectangle",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.137388, 60.67135],
+                    [17.160417, 60.67135],
+                    [17.160417, 60.681396],
+                    [17.137388, 60.681396],
+                    [17.137388, 60.67135]
+                ]
+            ]
+        },
+        "id": "ec3dc040-97d7-4c51-9a47-30d7e1d14a77"
+    }, {
+        "type": "Feature",
+        "properties": {
+            "shape": "Polygon",
+            "name": "Unnamed Layer",
+            "category": "default"
+        },
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [17.14495, 60.675344],
+                    [17.143061, 60.675091],
+                    [17.142374, 60.67465],
+                    [17.143447, 60.674608],
+                    [17.145208, 60.67486],
+                    [17.14495, 60.675344]
+                ]
+            ]
+        },
+        "id": "661c9075-8405-44e4-922d-848f5587725d"
+    }]
+}

@@ -59,7 +59,7 @@ class Renderer:
                     rect = [screen_width + target_x + j, top, 1, wall_height]
                     pygame.draw.rect(self.display, (shading, shading+100, shading), rect)
 
-    def draw_2D(self, env_lines, rays, targets):
+    def draw_2D(self, env_lines, rays, targets, agent_positions, closest_target):
         for env_line in env_lines:
             start = (env_line["start_x"] * self.scale, env_line["start_y"] * self.scale)
             end = (env_line["end_x"] * self.scale, env_line["end_y"] * self.scale)
@@ -71,6 +71,12 @@ class Renderer:
             end = (ray["end_x"] * self.scale, ray["end_y"] * self.scale)
             pygame.draw.line(self.display, (255, 0, 0), start, end)
         pygame.draw.circle(self.display, (200, 200, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
+        for ap in agent_positions:
+            pygame.draw.circle(self.display, (200, 100, 100), (ap[0] * self.scale, ap[1] * self.scale), 5, 1)
+        pygame.draw.line(self.display, (100, 100, 100), 
+            (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 
+            (closest_target[0] * self.scale, closest_target[1] * self.scale)
+        )
 
     def draw_reward(self, reward, agg_reward):
         textsurface = self.font_display.render(str(reward), False, (255, 255, 255))
@@ -78,14 +84,14 @@ class Renderer:
         textsurface = self.font_display.render(str(agg_reward), False, (150, 150, 150))
         self.display.blit(textsurface,(650,420))
 
-    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, agg_reward):
+    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, agg_reward, agent_positions, closest_target):
         self.display.fill((0, 0, 0))
-        self.draw_2D(env_lines, rays, targets)
+        self.draw_2D(env_lines, rays, targets, agent_positions, closest_target)
         self.draw_3D(rays, target_bearing, target_distance)
         self.draw_reward(reward, agg_reward)
         pygame.display.update()
         #pygame.display.flip()
-        self.clock.tick(32)
+        self.clock.tick(20)
         self.frame_count += 1
         return self.frame_count
 

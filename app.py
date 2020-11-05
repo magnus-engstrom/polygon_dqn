@@ -4,6 +4,7 @@ from model import Model
 import numpy as np
 import random
 import pygame
+from collections import deque
 
 import datetime as dt
 
@@ -19,8 +20,11 @@ def handle_input():
                     ret.add(event.key)
     return ret
 
+
 if __name__ == "__main__":
-    env = Env("sandbox/data/polygons.json")
+    random.seed(1)
+    np.random.seed(1)
+    env = Env("sandbox/data/polygons2.json")
     renderer = Renderer(500)
     env_lines = env.lines
     rays = [999]
@@ -30,6 +34,7 @@ if __name__ == "__main__":
     old_state = []
     agg_reward = 0
     render = False
+    agent_positions = deque(maxlen=50)
     while True:
         if model.training_started and start_time is None:
             start_time = dt.datetime.today().timestamp()
@@ -41,11 +46,12 @@ if __name__ == "__main__":
         else:
             action = random.randint(0, n_actions-1)
         (state, reward, end) = env.step(action)
-
-        if agg_reward < -2.5:
+        if env.agent_age > 500:
             end = True
         agg_reward += reward
+        state[1] = (state[1] + 3.14) / 6.28
         if len(old_state) > 0:
+            #store_short_term_memory()
             episode_memory.append([
                 old_state, 
                 action, 
@@ -57,18 +63,22 @@ if __name__ == "__main__":
         if len(state) > 1:
             old_state = np.array(state).reshape(-1, len(state))
         if end:
-            env.reset()
-            rays = [999]
+            agent_positions.append(list(env.agent_position))
+  
             print("total reward", agg_reward)
             if not render:
-                model.store_memory_and_train(episode_memory, agg_reward/len(episode_memory))
+                model.store_memory_and_train(episode_memory, agg_reward/len(episode_memory), env.get_agent_targets_count())
+            env.reset()
+            rays = [999]
             episode_memory = []
             old_state = []
             agg_reward = 0
             render = False
             continue
         if render:
-            renderer.draw(env_lines, env.get_agent_rays(), env.targets, target_bearing, target_distance, reward, agg_reward)
+            renderer.draw(env_lines, env.get_agent_rays(), env.targets, target_bearing, 
+                target_distance, reward, agg_reward, agent_positions, list(env.agent_closest_target)
+            )
         
         if start_time is not None:
             i += 1

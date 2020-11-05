@@ -245,7 +245,7 @@ pub fn relative_bearing_to_target(agent_position: Point<f64>, agent_step_ray_end
     }).to_radians()
 }
 
-fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -> Vec<Point<f64>> {
+pub fn intersections(linestring1: &LineString<f64>, linestring2: &LineString<f64>) -> Vec<Point<f64>> {
     let mut intersections = vec![];
     if linestring1.0.is_empty() || linestring2.0.is_empty() {
         return vec![];

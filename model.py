@@ -13,23 +13,29 @@ from tb import ModifiedTensorBoard
 
 class Model:
     def __init__(self, n_actions, n_features):
+        tf.random.set_seed(1)
+        random.seed(1)
+        np.random.seed(1)
         self.total_memory = deque(maxlen=100000)
-        self.min_batch_samples = 500
+        self.min_batch_samples = 100
         self.training_started = False
         self.epsilon = 1
-        self.epsilon_decay = 0.995
-        self.batch_size = 64
+        self.epsilon_decay = 0.997
+        self.min_epsilon = 0.001
+        self.batch_size = 128
         self.model = None
         self.n_actions = n_actions
-        self.discount = 0.993
+        self.discount = 0.995
         self.n_features = n_features
         self.training_count = 0
-        self.name = "model_test_31"
+        self.name = "model_test_118"
         self.min_learning_rate = 0.0004
-        self.learning_rate = 0.005
+        self.learning_rate = 0.0015
+        self.update_counter = 0
+        self.update_model_at = 10
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
-    def store_memory_and_train(self, episode_memory, reward_per_step):
+    def store_memory_and_train(self, episode_memory, reward_per_step, targets_found):
         self.total_memory += episode_memory
         print(len(self.total_memory), "rows in memory")
         if len(self.total_memory) >= self.batch_size * self.min_batch_samples:
@@ -41,11 +47,18 @@ class Model:
                 self.target_model.set_weights(self.model.get_weights())
             self.training_started = True
             self.tensorboard_callback.update_stats(
-                reward_per_step=reward_per_step
+                reward_per_step=reward_per_step,
+                targets_found=targets_found,
+                update_counter=self.update_counter,
+                learning_rate=self.learning_rate,
+                epsilon=self.epsilon
             )
             self.__train()
-            self.epsilon *= self.epsilon_decay
-            if self.training_count % 10 == 0: 
+            if self.epsilon_decay > self.min_epsilon:
+                self.epsilon *= self.epsilon_decay
+            self.update_counter += 1
+            if self.update_counter == self.update_model_at: 
+                self.update_counter = 0
                 print("### updating target model ###")
                 self.target_model.set_weights(self.model.get_weights())
                 if self.learning_rate > self.min_learning_rate:
@@ -70,8 +83,8 @@ class Model:
     def create_neural_network(self, n_features, n_actions):
         model = Sequential()
         model.add(InputLayer(batch_input_shape=(1, n_features)))
-        model.add(Dense(512, activation='relu'))
-        model.add(Dense(512, activation='relu'))
+        model.add(Dense(256, activation='relu'))
+        model.add(Dense(256, activation='relu'))
         model.add(Dense(n_actions, activation='linear'))
         model.compile(loss="mse", optimizer=Adam(lr=self.learning_rate), metrics=['accuracy'])
         return model

@@ -38,11 +38,31 @@ impl Env {
         Ok(self.env.agent.ray_count)
     }
 
+    #[getter(agent_age)]
+    fn get_agent_age(&self) -> PyResult<f64> {
+        Ok(self.env.agent.age)
+    }
+
+
+    #[getter(agent_position)]
+    fn get_agent_position(&self) -> PyResult<(f64, f64)> {
+        Ok(self.env.agent.position.x_y())
+    }
+
+    #[getter(agent_closest_target)]
+    fn get_agent_closest_target(&self) -> PyResult<(f64, f64)> {
+        Ok(self.env.agent.closest_target.x_y())
+    }
+
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
         self.env.step(action)
     }
     pub fn get_agent_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
         Ok(self.env.get_agent_rays())
+    }
+
+    pub fn get_agent_targets_count(&self) -> PyResult<i32> {
+        Ok(self.env.agent.targets_count)
     }
 
     pub fn get_state(&mut self) -> Vec<f64> {
