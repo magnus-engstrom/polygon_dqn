@@ -43,6 +43,11 @@ impl Env {
         Ok(self.env.agent.age)
     }
 
+    #[getter(agent_active)]
+    fn get_agent_active(&self) -> PyResult<bool> {
+        Ok(self.env.agent.active)
+    }
+
 
     #[getter(agent_position)]
     fn get_agent_position(&self) -> PyResult<(f64, f64)> {

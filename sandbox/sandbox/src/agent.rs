@@ -15,6 +15,7 @@ pub struct Agent {
     pub targets_count: i32,
     pub closest_target: Point<f64>,
     pub max_age: f64,
+    pub active: bool
 }
 
 impl Agent {
@@ -23,15 +24,16 @@ impl Agent {
             speed: 0.005,
             age: 1.0,
             direction,
-            ray_count: 21.0,
-            fov: 2.0,
-            visibility: 0.3,
-            max_age: 500.0,
+            ray_count: 39.0,
+            fov: 0.8,
+            visibility: 0.35,
+            max_age: 350.0,
             position: position,
             rays: vec![],
             rays_bb:Rect::new((f64::NEG_INFINITY,f64::NEG_INFINITY),(f64::INFINITY,f64::INFINITY)),
             targets_count: 0,
             closest_target: Point::new(0.0,0.0),
+            active: true
         }
     }
 
@@ -48,12 +50,16 @@ impl Agent {
         self.rays_bb = rays_bb;
     }
 
-    pub fn step(&mut self, direction_change: f64, make_move: bool) {
+    pub fn step(&mut self, direction_change: f64, full_move: bool) {
         let mut step_size = 0.0;
-        if make_move {
+        if full_move {
             step_size = self.speed;
+        } else {
+            step_size = self.speed / 3.0;
         }
-        self.age = self.age + 1.0;
+        if self.age > self.max_age {
+            self.active = false;
+        }
         self.direction += direction_change;
         if self.direction > 3.14 {
             self.direction = self.direction - 6.28;

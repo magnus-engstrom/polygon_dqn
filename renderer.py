@@ -26,7 +26,7 @@ class Renderer:
         floor.convert()
         self.assets["sky"] = pygame.transform.scale(floor, (500, 150))
 
-    def draw_3D(self, rays, target_bearing, target_distance):
+    def draw_3D(self, rays, target_bearing, target_distance, can_see_target):
         offset = 500
         screen_width = 500
         width = screen_width / len(rays)
@@ -47,7 +47,7 @@ class Renderer:
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
             offset += width - 1
 
-        if target_bearing >= rays[0]["angle"] and target_bearing <= rays[-1]["angle"]:
+        if target_bearing >= rays[0]["angle"] and target_bearing <= rays[-1]["angle"] and can_see_target > 0:
             z = target_distance * math.cos(target_bearing)
             wall_height = screen_height / z * 0.015
             wall_height = min(wall_height, screen_height)
@@ -78,20 +78,22 @@ class Renderer:
             (closest_target[0] * self.scale, closest_target[1] * self.scale)
         )
 
-    def draw_reward(self, reward, agg_reward):
+    def draw_reward(self, reward, agg_reward, target_bearing):
         textsurface = self.font_display.render(str(reward), False, (255, 255, 255))
         self.display.blit(textsurface,(650,350))
         textsurface = self.font_display.render(str(agg_reward), False, (150, 150, 150))
         self.display.blit(textsurface,(650,420))
+        textsurface = self.font_display.render(str(target_bearing), False, (150, 150, 150))
+        self.display.blit(textsurface,(650,460))
 
-    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, agg_reward, agent_positions, closest_target):
+    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, agg_reward, agent_positions, closest_target, can_see_target):
         self.display.fill((0, 0, 0))
         self.draw_2D(env_lines, rays, targets, agent_positions, closest_target)
-        self.draw_3D(rays, target_bearing, target_distance)
-        self.draw_reward(reward, agg_reward)
+        self.draw_3D(rays, target_bearing, target_distance, can_see_target)
+        self.draw_reward(reward, agg_reward, target_bearing)
         pygame.display.update()
         #pygame.display.flip()
-        self.clock.tick(20)
+        self.clock.tick(22)
         self.frame_count += 1
         return self.frame_count
 

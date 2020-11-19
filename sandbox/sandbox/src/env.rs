@@ -27,9 +27,9 @@ impl Env {
         let (line_strings, targets, scalex, scaley) = utils::import_geometry(path);
         let mut rng = rand::thread_rng();
         let starting_points = vec![
-            //Point::new(0.12, 0.58),
-            Point::new(0.5, 0.5),
-            //Point::new(0.9, 0.1),
+            Point::new(0.1, 0.1),
+            Point::new(0.51, 0.51),
+            Point::new(0.7, 0.9),
         ];
         let mut agent = Agent::new(
             starting_points.choose(&mut rand::thread_rng()).unwrap().clone(), 
@@ -37,11 +37,15 @@ impl Env {
         );
         let original_targets = targets.to_vec();
         let action_space = vec![
+            //-25.0f64.to_radians(),
+            //-24.0f64.to_radians(),
+            -10.0f64.to_radians(),
+            -1.0f64.to_radians(),
             0.0f64.to_radians(),
-            -5.0f64.to_radians(),
-            5.0f64.to_radians(),
-            //30.0f64.to_radians(),
-            //-30.0f64.to_radians(),
+            1.0f64.to_radians(),
+            10.0f64.to_radians(),
+            //24.0f64.to_radians(),
+            //25.0f64.to_radians(),
         ];
         Env {
             line_strings,
@@ -52,7 +56,7 @@ impl Env {
             scalex,
             scaley,
             action_space,
-            prev_target_dist: 0.0,
+            prev_target_dist: 1.0,
             starting_points,
         }
     }
@@ -92,51 +96,72 @@ impl Env {
     }
 
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
-        let mut move_forward = false;
-        let mut reward = (self.agent.speed * -1.0);
+        let mut full_move = false;
+        let mut reward = -0.06;
         let direction_change = self.action_space.get(action as usize).unwrap().clone();
-        if direction_change == 0.0 {
-            move_forward = true
+        if direction_change.abs() < 3.0f64.to_radians() {
+            full_move = true
         }
         let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
             let state = self.last_state.iter().copied().collect();
-            return (state, -2.0, true);
+            return (state, -3.0, true);
         }
-        let proximity_ray = Ray::new(direction_change, self.agent.speed*3.0, self.agent.direction, self.agent.position);
-        if utils::intersects(&proximity_ray, &self.line_strings.iter().collect()) {
-            reward = reward + -0.5;
-        }
-        self.agent.step(direction_change, move_forward);
+        self.agent.step(direction_change, full_move);
         self.update_agent();
-
         let (state ,target_in_sight) = self.get_state();
         let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
+        let mut distance_to_target = self.agent.position.euclidean_distance(&closest_target);
         self.agent.closest_target = closest_target;
-        if self.last_state.len() > 0 {
-            if target_in_sight {//&& (self.last_state.get(0).unwrap() - state.get(0).unwrap()) > 0.0 {
-                //reward = reward + self.agent.speed * 3.0;
-                //println!("test {}", ((self.agent.fov/2.0) - state.get(1).unwrap().abs()));
-                if self.last_state.get(0).unwrap() - state.get(0).unwrap() > 0.0 {
-                    reward = reward + ((self.agent.fov/1.9) - state.get(1).unwrap().abs()) / 50.0;
-                    let distance_score = self.last_state.get(0).unwrap() - state.get(0).unwrap();
-                    reward = reward + distance_score;
-                    //println!("distance score: {}", distance_score);
-                }
-                //println!("reward {}", reward);
+        reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 10.0;
+        if target_in_sight && full_move {
+            reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
+        }
+        if self.last_state.len() > 0 && self.prev_target_dist - distance_to_target > 0.0 {
+            // if target_in_sight {
+            let distance_score = self.prev_target_dist - distance_to_target;
+            reward = reward + (distance_score / 10.0); 
+            // } else {
+            //     reward = reward + 0.01;
+            // }
+        } else {
+            self.agent.age = self.agent.age + 1.0;
+        }
+        //let mut proximity_rays = vec![];
+        for i in 0..self.action_space.len() {
+            let pr = Ray::new(self.action_space.get(i).unwrap().clone(), self.agent.speed*3.0, self.agent.direction, self.agent.position);
+            if utils::intersects(&pr, &self.line_strings.iter().collect()) {
+                // if full_move {
+                //     reward = -1.0;
+                // } else {
+                reward = -0.2;
+                //}
+                break;
             }
         }
-        if state[0] < 0.02 {
-            reward = 2.0;
+        // for pr in proximity_rays.iter() {
+        //     if utils::intersects(&pr, &self.line_strings.iter().collect()) {
+        //         // if full_move {
+        //         //     reward = -1.0;
+        //         // } else {
+        //         reward = -0.2;
+        //         //}
+        //         break;
+        //     }
+        // }
+        if distance_to_target < 0.02 {
+            reward = 3.0;
+            distance_to_target = 1.0;
             self.agent.age = 1.0;
             self.targets = self.targets.iter().filter(|p| **p != closest_target).cloned().collect();
             if self.targets.len() < 1 {
                 self.targets = self.original_targets.to_vec();
             }
             self.agent.targets_count = self.agent.targets_count + 1;
-            //self.targets.push(Point::new(rng.gen_range(0.0, 1.0), rng.gen_range(0.0, 1.0)));
         }
+        self.prev_target_dist = distance_to_target;
         self.last_state = state.iter().copied().collect();
+        //reward = (reward - 3.0) / 7.0;
         return (state, reward, false);
     }
 
@@ -167,20 +192,34 @@ impl Env {
         let step_ray = Ray::new(0.0, self.agent.speed, self.agent.direction, self.agent.position);
         let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
         let distance_to_target = self.agent.position.euclidean_distance(&closest_target);
-        state.push(distance_to_target);
-        let mut relative_bearing_to_target = utils::relative_bearing_to_target(self.agent.position, step_ray.line.end_point(), closest_target);
-        if relative_bearing_to_target.abs() < self.agent.fov / 2.0 {
+        //state.push(distance_to_target);
+        let relative_bearing_to_target = utils::relative_bearing_to_target(self.agent.position, step_ray.line.end_point(), closest_target);
+        if relative_bearing_to_target.abs() <= self.agent.fov {
+            can_see_target = true;
             for line in self.line_strings.iter() {
-                can_see_target = true;
                 let intersections = utils::intersections(&LineString(vec![closest_target.into(), self.agent.position.into()]), line);
                 if intersections.len() > 0 {
                     can_see_target = false;
+                    break;
                 }
             }
         }
-        self.prev_target_dist = distance_to_target;
         state.push(relative_bearing_to_target);
+        state.push(distance_to_target);
+        //state.push((self.agent.position.x() - closest_target.x()).abs());
+        //state.push((self.agent.position.y() - closest_target.y()).abs());
+        if can_see_target {
+            state.push(1.0);
+        } else {
+            state.push(0.0);
+        }
         //state.push(self.agent.age/self.agent.max_age);
+        //state.push(self.agent.position.x()-closest_target.x());
+        //state.push(self.agent.position.y()-closest_target.y());
+        
+        //state.push(closest_target.x());
+        //state.push(closest_target.y());
+        //state.push(self.agent.direction / 6.14);
         let mut ray_lengths = self.agent.rays.iter().map(|r| r.length / r.max_length).collect();
         state.append(&mut ray_lengths);
         return (state, can_see_target);
@@ -188,14 +227,16 @@ impl Env {
 
     pub fn reset(&mut self) {
         let mut rng = rand::thread_rng();
+        self.targets = self.original_targets.to_vec();
+        let start = self.targets.choose(&mut rand::thread_rng()).unwrap().clone();
         let mut agent = Agent::new(
-            self.starting_points.choose(&mut rand::thread_rng()).unwrap().clone(), 
+            start, 
             rng.gen_range(-3.14, 3.14)
         );
+        self.targets = self.targets.iter().filter(|p| **p != start).cloned().collect();
         self.last_state = vec![];
         agent.cast_rays();
         self.agent = agent;
-        self.targets = self.original_targets.to_vec();
         self.update_agent();
     }
 

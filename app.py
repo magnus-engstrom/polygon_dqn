@@ -16,76 +16,108 @@ def handle_input():
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
             if pygame.key.get_focused():
-                if event.key == pygame.K_r:
-                    ret.add(event.key)
+                print(event.key)
+                ret.add(event.key)
     return ret
 
 
 if __name__ == "__main__":
+    polygons = [
+        "polygons2.json",
+        "rooms.json",
+        "polygons_hard.json",
+        "room_hard.json",
+        "complex.json"
+    ]
     random.seed(1)
     np.random.seed(1)
-    env = Env("sandbox/data/polygons2.json")
+    env = Env("sandbox/data/" + random.choice(polygons))
     renderer = Renderer(500)
-    env_lines = env.lines
     rays = [999]
     n_actions = len(env.action_space)
-    model = Model(n_actions, int(env.ray_count+2))
+    model = Model(n_actions, int(env.ray_count+3))
     episode_memory = []
     old_state = []
     agg_reward = 0
     render = False
     agent_positions = deque(maxlen=50)
+    rewards = deque(maxlen=50)
+    tagets_found = deque(maxlen=50)
+    dump_log = False
+    paused = False
     while True:
-        if model.training_started and start_time is None:
-            start_time = dt.datetime.today().timestamp()
         keys = handle_input()
-        if pygame.K_r in keys:
-          render = True
-        if (render or random.uniform(0,1) < model.epsilon) and model.training_started and len(old_state) > 1:
-            model.predict_action(np.array(old_state))
-        else:
-            action = random.randint(0, n_actions-1)
-        (state, reward, end) = env.step(action)
-        if env.agent_age > 500:
-            end = True
-        agg_reward += reward
-        state[1] = (state[1] + 3.14) / 6.28
-        if len(old_state) > 0:
-            #store_short_term_memory()
-            episode_memory.append([
-                old_state, 
-                action, 
-                np.array(state).reshape(-1, len(state)), 
-                reward, 
-                end
-            ])
-        target_distance, target_bearing, *rays = state
-        if len(state) > 1:
-            old_state = np.array(state).reshape(-1, len(state))
-        if end:
-            agent_positions.append(list(env.agent_position))
-  
-            print("total reward", agg_reward)
-            if not render:
-                model.store_memory_and_train(episode_memory, agg_reward/len(episode_memory), env.get_agent_targets_count())
-            env.reset()
-            rays = [999]
-            episode_memory = []
-            old_state = []
-            agg_reward = 0
-            render = False
+        if 107 in keys:
+            dump_log = False
+        if pygame.K_l in keys:
+            dump_log = True
+        if 112 in keys:
+            paused = True
+        if 111 in keys:
+            paused = False
+        if paused:
             continue
-        if render:
-            renderer.draw(env_lines, env.get_agent_rays(), env.targets, target_bearing, 
-                target_distance, reward, agg_reward, agent_positions, list(env.agent_closest_target)
-            )
-        
-        if start_time is not None:
-            i += 1
-            time_diff = dt.datetime.today().timestamp() - start_time
-            if i % 100 == 0: 
-                print("- - -")
-                print(i / time_diff)
-                print("- - -")
+        if not paused:
+            if model.training_started and start_time is None:
+                start_time = dt.datetime.today().timestamp()
+            if pygame.K_r in keys:
+                render = True
+            action = model.predict_action(np.array(old_state), render)
+            (state, reward, end) = env.step(action)
+            if not env.agent_active:
+                end = True
+            agg_reward += reward
+            state[0] /= 3.14
+            if dump_log:
+                print("#### Logging ###")
+                print("state", state)
+                print("actions", model.model.predict(np.array(state).reshape(-1, len(state))))
+                print("### end ###")
+            if len(old_state) > 0 and env.agent_active:
+                episode_memory.append([
+                    np.array(old_state).reshape(-1, len(old_state)),
+                    action, 
+                    np.array(state).reshape(-1, len(state)), 
+                    reward,
+                    end
+                ])
+            target_bearing, target_distance, can_see_target, *rays = state
+            if len(state) > 1:
+                old_state = state
+            if end:
+                print("total reward", agg_reward)
+                if not render:
+                    rewards.append(agg_reward)
+                    tagets_found.append(env.get_agent_targets_count())
+                    agent_positions.append(list(env.agent_position))
+                    model.store_memory_and_train(
+                        episode_memory, 
+                        agg_reward/len(episode_memory), 
+                        env.get_agent_targets_count(),
+                        sum(tagets_found) / len(tagets_found),
+                        sum(rewards) / len(rewards)
+                    )
+                if random.uniform(0,1) > 0.9: 
+                    env = Env("sandbox/data/" + random.choice(polygons))
+                    agent_positions = deque(maxlen=50)
+                env.reset()
+                rays = [999]
+                episode_memory = []
+                old_state = []
+                agg_reward = 0
+                render = False
+                continue
+            if render:
+                renderer.draw(env.lines, env.get_agent_rays(), env.targets, target_bearing*3.14, 
+                    target_distance, reward, agg_reward, agent_positions, list(env.agent_closest_target), can_see_target
+                )
+            
+            if start_time is not None:
+                i += 1
+                time_diff = dt.datetime.today().timestamp() - start_time
+                if i % 100 == 0: 
+                    print("- - -")
+                    print(i / time_diff)
+                    print("- - -")
 
         
