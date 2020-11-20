@@ -18,6 +18,7 @@ pub struct Env {
     pub action_space: Vec<f64>,
     pub starting_points: Vec<Point<f64>>,
     pub prev_target_dist: f64,
+    pub prev_past_position_dist: f64,
     scalex: f64,
     scaley: f64,
 }
@@ -35,6 +36,7 @@ impl Env {
             starting_points.choose(&mut rand::thread_rng()).unwrap().clone(), 
             rng.gen_range(-3.14, 3.14)
         );
+        let past_position = agent.position;
         let original_targets = targets.to_vec();
         let action_space = vec![
             //-25.0f64.to_radians(),
@@ -58,6 +60,7 @@ impl Env {
             action_space,
             prev_target_dist: 1.0,
             starting_points,
+            prev_past_position_dist: 0.0,
         }
     }
 
@@ -107,6 +110,7 @@ impl Env {
             let state = self.last_state.iter().copied().collect();
             return (state, -3.0, true);
         }
+        self.prev_past_position_dist = self.agent.past_position_distance;
         self.agent.step(direction_change, full_move);
         self.update_agent();
         let (state ,target_in_sight) = self.get_state();
@@ -114,42 +118,27 @@ impl Env {
         let mut distance_to_target = self.agent.position.euclidean_distance(&closest_target);
         self.agent.closest_target = closest_target;
         reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
-        // if target_in_sight && full_move {
-        //     reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
-        // }
         if self.last_state.len() > 0 && self.prev_target_dist - distance_to_target > 0.0 {
-            // if target_in_sight {
             let distance_score = 1.0 - (distance_to_target / self.prev_target_dist);
-            //println!("distance score: {}", distance_score);
             reward = reward + (distance_score); 
-            // } else {
-            //     reward = reward + 0.01;
-            // }
         } else {
             self.agent.age = self.agent.age + 1.0;
-        }
-        //let mut proximity_rays = vec![];
+        }  
         for i in 0..self.action_space.len() {
             let pr = Ray::new(self.action_space.get(i).unwrap().clone(), self.agent.speed*3.0, self.agent.direction, self.agent.position, false);
             if utils::intersects(&pr, &self.line_strings.iter().collect()) {
-                // if full_move {
-                //     reward = -1.0;
-                // } else {
                 reward = -0.2;
-                //}
                 break;
             }
         }
-        // for pr in proximity_rays.iter() {
-        //     if utils::intersects(&pr, &self.line_strings.iter().collect()) {
-        //         // if full_move {
-        //         //     reward = -1.0;
-        //         // } else {
-        //         reward = -0.2;
-        //         //}
-        //         break;
-        //     }
-        // }
+        if !target_in_sight && self.prev_past_position_dist - self.agent.past_position_distance > 0.0 {
+            let mut backtrack_penalty =  (1.0 - (distance_to_target / self.prev_target_dist)) * 2.0;
+            backtrack_penalty = backtrack_penalty + (1.0 - (self.agent.past_position_bearing.abs() / 3.14)) / 5.0;
+            if backtrack_penalty > 0.0 {
+                reward = reward + backtrack_penalty * -1.0;
+                println!("backtrack penalty {}", reward)
+            }
+        }
         if distance_to_target < 0.02 {
             reward = 3.5;
             distance_to_target = 1.0;
@@ -159,10 +148,11 @@ impl Env {
                 self.targets = self.original_targets.to_vec();
             }
             self.agent.targets_count = self.agent.targets_count + 1;
+            self.agent.past_positions = vec![self.agent.position];
+            self.agent.position_ticker = 0;
         }
         self.prev_target_dist = distance_to_target;
         self.last_state = state.iter().copied().collect();
-        //reward = (reward - 3.0) / 7.0;
         return (state, reward, false);
     }
 
@@ -194,7 +184,6 @@ impl Env {
         let step_ray = Ray::new(0.0, self.agent.speed, self.agent.direction, self.agent.position, false);
         let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
         let distance_to_target = self.agent.position.euclidean_distance(&closest_target);
-        //state.push(distance_to_target);
         let relative_bearing_to_target = utils::relative_bearing_to_target(self.agent.position, step_ray.line.end_point(), closest_target);
         if relative_bearing_to_target.abs() <= self.agent.fov * 1.3 {
             can_see_target = true;
@@ -208,20 +197,13 @@ impl Env {
         }
         state.push(relative_bearing_to_target);
         state.push(distance_to_target);
-        //state.push((self.agent.position.x() - closest_target.x()).abs());
-        //state.push((self.agent.position.y() - closest_target.y()).abs());
         if can_see_target {
             state.push(1.0);
         } else {
             state.push(0.0);
         }
-        //state.push(self.agent.age/self.agent.max_age);
-        //state.push(self.agent.position.x()-closest_target.x());
-        //state.push(self.agent.position.y()-closest_target.y());
-        
-        //state.push(closest_target.x());
-        //state.push(closest_target.y());
-        //state.push(self.agent.direction / 6.14);
+        state.push(self.agent.past_position_distance);
+        state.push(self.agent.past_position_bearing / 3.14);
         let mut ray_lengths = self.agent.rays.iter().map(|r| r.length / r.max_length).collect();
         state.append(&mut ray_lengths);
         return (state, can_see_target);

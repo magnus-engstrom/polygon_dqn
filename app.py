@@ -35,7 +35,7 @@ if __name__ == "__main__":
     renderer = Renderer(500)
     rays = [999]
     n_actions = len(env.action_space)
-    model = Model(n_actions, int(env.ray_count+3))
+    model = Model(n_actions, int(env.ray_count+5))
     episode_memory = []
     old_state = []
     agg_reward = 0
@@ -109,7 +109,12 @@ if __name__ == "__main__":
                 continue
             if render:
                 renderer.draw(env.lines, env.get_agent_rays(), env.targets, target_bearing*3.14, 
-                    target_distance, reward, agg_reward, agent_positions, list(env.agent_closest_target), can_see_target
+                    target_distance, 
+                    reward, agg_reward, 
+                    agent_positions, 
+                    list(env.agent_closest_target), 
+                    can_see_target,
+                    env.agent_past_position
                 )
             
             if start_time is not None:

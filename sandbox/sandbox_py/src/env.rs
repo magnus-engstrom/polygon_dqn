@@ -54,6 +54,11 @@ impl Env {
         Ok(self.env.agent.position.x_y())
     }
 
+    #[getter(agent_past_position)]
+    fn get_agent_past_position(&self) -> PyResult<(f64, f64)> {
+        Ok(utils::closest_of(self.env.agent.past_positions.iter(), self.env.agent.position).unwrap().x_y())
+    }
+
     #[getter(agent_closest_target)]
     fn get_agent_closest_target(&self) -> PyResult<(f64, f64)> {
         Ok(self.env.agent.closest_target.x_y())
