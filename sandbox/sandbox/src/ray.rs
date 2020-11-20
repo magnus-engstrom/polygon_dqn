@@ -7,14 +7,16 @@ pub struct Ray {
     pub max_length: f64,
     pub line_string: LineString<f64>,
     pub line: Line<f64>,
+    pub in_fov: bool,
 }
 
 impl Ray {
-    pub fn new(angle: f64, length: f64, center_angle: f64, position: Point<f64>) -> Ray {
+    pub fn new(angle: f64, length: f64, center_angle: f64, position: Point<f64>, in_fov: bool) -> Ray {
         Ray {
             angle,
             length,
             max_length: length,
+            in_fov: in_fov,
             line_string: LineString(vec![
                 Coordinate {
                     x: position.x(),
@@ -58,7 +60,7 @@ impl Ray {
             let angle = x.atan2(1.0-fov);
             //let angle = x; //x.atan2(1.0-fov);
             //x = x + a;
-            let ray = Ray::new(angle, length, direction, position);
+            let ray = Ray::new(angle, length, direction, position, true);
             let (tmp_min_x, tmp_min_y, tmp_max_x, tmp_max_y) = utils::min_max_point(&ray.line.end, min_x, min_y, max_x, max_y);
             min_x = tmp_min_x;
             min_y = tmp_min_y;
@@ -66,6 +68,8 @@ impl Ray {
             max_y = tmp_max_y;
             rays.push(ray)
         }
+        rays.push(Ray::new(1.5, length, direction, position, false));
+        rays.push(Ray::new(-1.5, length, direction, position, false));
         (rays, Rect::new((min_x, min_y),(max_x, max_y)))
     }
 }

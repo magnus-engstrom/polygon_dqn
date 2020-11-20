@@ -28,7 +28,7 @@ class Model:
         self.discount = 0.997
         self.n_features = n_features
         self.training_count = 0
-        self.name = "model_test_213"
+        self.name = "model_test_220"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.update_counter = 0

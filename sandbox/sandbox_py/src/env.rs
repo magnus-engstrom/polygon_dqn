@@ -35,7 +35,7 @@ impl Env {
 
     #[getter(ray_count)]
     fn get_ray_count(&self) -> PyResult<f64> {
-        Ok(self.env.agent.ray_count)
+        Ok(self.env.agent.ray_count + 2.0)
     }
 
     #[getter(agent_age)]

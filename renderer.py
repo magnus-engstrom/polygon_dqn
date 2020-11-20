@@ -37,6 +37,7 @@ class Renderer:
         self.display.blit(self.assets["sky"], [500, 0, 500, 150])
         self.display.blit(self.assets["floor"], [500, 150, 500, 150])
         for i, ray in enumerate(rays):
+            if ray["in_fov"] < 1: continue
             #if int(i*width) < target_x or int(i*width) > target_x + 10:
             z = ray["length"] * math.cos(ray["angle"])
             wall_height = screen_height / z * 0.015

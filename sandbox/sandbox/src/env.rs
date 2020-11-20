@@ -102,7 +102,7 @@ impl Env {
         if direction_change.abs() < 3.0f64.to_radians() {
             full_move = true
         }
-        let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position);
+        let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position, false);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
             let state = self.last_state.iter().copied().collect();
             return (state, -3.0, true);
@@ -113,14 +113,15 @@ impl Env {
         let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
         let mut distance_to_target = self.agent.position.euclidean_distance(&closest_target);
         self.agent.closest_target = closest_target;
-        reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 10.0;
-        if target_in_sight && full_move {
-            reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
-        }
+        reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
+        // if target_in_sight && full_move {
+        //     reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
+        // }
         if self.last_state.len() > 0 && self.prev_target_dist - distance_to_target > 0.0 {
             // if target_in_sight {
-            let distance_score = self.prev_target_dist - distance_to_target;
-            reward = reward + (distance_score / 10.0); 
+            let distance_score = 1.0 - (distance_to_target / self.prev_target_dist);
+            //println!("distance score: {}", distance_score);
+            reward = reward + (distance_score); 
             // } else {
             //     reward = reward + 0.01;
             // }
@@ -129,7 +130,7 @@ impl Env {
         }
         //let mut proximity_rays = vec![];
         for i in 0..self.action_space.len() {
-            let pr = Ray::new(self.action_space.get(i).unwrap().clone(), self.agent.speed*3.0, self.agent.direction, self.agent.position);
+            let pr = Ray::new(self.action_space.get(i).unwrap().clone(), self.agent.speed*3.0, self.agent.direction, self.agent.position, false);
             if utils::intersects(&pr, &self.line_strings.iter().collect()) {
                 // if full_move {
                 //     reward = -1.0;
@@ -150,7 +151,7 @@ impl Env {
         //     }
         // }
         if distance_to_target < 0.02 {
-            reward = 3.0;
+            reward = 3.5;
             distance_to_target = 1.0;
             self.agent.age = 1.0;
             self.targets = self.targets.iter().filter(|p| **p != closest_target).cloned().collect();
@@ -176,6 +177,7 @@ impl Env {
                     ("end_y", line.end.y),
                     ("length", ray.length),
                     ("angle", ray.angle),
+                    ("in_fov", ray.in_fov as i32 as f64),
                 ]
                     .iter()
                     .cloned()
@@ -189,12 +191,12 @@ impl Env {
     pub fn get_state(&mut self) -> (Vec<f64>, bool) {
         let mut state = vec![];
         let mut can_see_target = false;
-        let step_ray = Ray::new(0.0, self.agent.speed, self.agent.direction, self.agent.position);
+        let step_ray = Ray::new(0.0, self.agent.speed, self.agent.direction, self.agent.position, false);
         let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
         let distance_to_target = self.agent.position.euclidean_distance(&closest_target);
         //state.push(distance_to_target);
         let relative_bearing_to_target = utils::relative_bearing_to_target(self.agent.position, step_ray.line.end_point(), closest_target);
-        if relative_bearing_to_target.abs() <= self.agent.fov {
+        if relative_bearing_to_target.abs() <= self.agent.fov * 1.3 {
             can_see_target = true;
             for line in self.line_strings.iter() {
                 let intersections = utils::intersections(&LineString(vec![closest_target.into(), self.agent.position.into()]), line);
