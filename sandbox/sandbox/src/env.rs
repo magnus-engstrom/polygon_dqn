@@ -32,11 +32,10 @@ impl Env {
             Point::new(0.51, 0.51),
             Point::new(0.7, 0.9),
         ];
-        let mut agent = Agent::new(
+        let agent = Agent::new(
             starting_points.choose(&mut rand::thread_rng()).unwrap().clone(), 
             rng.gen_range(-3.14, 3.14)
         );
-        let past_position = agent.position;
         let original_targets = targets.to_vec();
         let action_space = vec![
             //-25.0f64.to_radians(),
@@ -133,7 +132,7 @@ impl Env {
         }
         if !target_in_sight && self.prev_past_position_dist - self.agent.past_position_distance > 0.0 {
             let mut backtrack_penalty =  (1.0 - (distance_to_target / self.prev_target_dist)) * 2.0;
-            backtrack_penalty = backtrack_penalty + (1.0 - (self.agent.past_position_bearing.abs() / 3.14)) / 5.0;
+            backtrack_penalty = backtrack_penalty + (1.0 - (self.agent.past_position_bearing.abs() / 3.14)) / 4.0;
             if backtrack_penalty > 0.0 {
                 reward = reward + backtrack_penalty * -1.0;
                 println!("backtrack penalty {}", reward)
@@ -166,6 +165,7 @@ impl Env {
                     ("end_x", line.end.x),
                     ("end_y", line.end.y),
                     ("length", ray.length),
+                    ("max_length", ray.max_length),
                     ("angle", ray.angle),
                     ("in_fov", ray.in_fov as i32 as f64),
                 ]

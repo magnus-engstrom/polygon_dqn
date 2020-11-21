@@ -28,12 +28,13 @@ class Model:
         self.discount = 0.997
         self.n_features = n_features
         self.training_count = 0
-        self.name = "model_test_223"
+        self.name = "model_test_225"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.update_counter = 0
         self.update_model_at = 7
         self.mean_targets_found = 0
+        self.max_mean_targets_found = 0
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
     def store_memory_and_train(self, episode_memory, reward_per_step, targets_found, mean_targets_found, mean_rewards):
@@ -56,9 +57,10 @@ class Model:
                 mean_targets_found = mean_targets_found,
                 mean_rewards = mean_rewards
             )
-            self.__train()
             print("- - - -", self.mean_targets_found, mean_targets_found)
+            self.__train()
             if self.mean_targets_found <= mean_targets_found:
+                self.model.save("models/" + self.name + "_latest")
                 if self.epsilon > self.min_epsilon:
                     self.epsilon *= self.epsilon_decay
                 if self.learning_rate > self.min_learning_rate:
@@ -69,6 +71,9 @@ class Model:
                     self.epsilon *= 2 - self.epsilon_decay
                     print("increase epsilon")
             self.mean_targets_found = mean_targets_found
+            if self.max_mean_targets_found < self.mean_targets_found:
+                self.model.save("models/" + self.name + "_best")
+                self.max_mean_targets_found = self.mean_targets_found
             # self.update_counter += 1
             # if self.update_counter == self.update_model_at: 
             #     self.update_counter = 0

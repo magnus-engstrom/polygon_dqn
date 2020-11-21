@@ -84,7 +84,7 @@ if __name__ == "__main__":
             target_bearing, target_distance, can_see_target, *rays = state
             if len(state) > 1:
                 old_state = state
-            if end:
+            if end or env.get_agent_targets_count() > 10.0:
                 print("total reward", agg_reward)
                 if not render:
                     rewards.append(agg_reward)
@@ -97,7 +97,7 @@ if __name__ == "__main__":
                         sum(tagets_found) / len(tagets_found),
                         sum(rewards) / len(rewards)
                     )
-                if random.uniform(0,1) > 0.9: 
+                if random.uniform(0,1) > 0.8 or env.get_agent_targets_count(): 
                     env = Env("sandbox/data/" + random.choice(polygons))
                     agent_positions = deque(maxlen=50)
                 env.reset()

@@ -70,7 +70,10 @@ class Renderer:
             start = (ray["start_x"] * self.scale, ray["start_y"] * self.scale)
             end = (ray["end_x"] * self.scale, ray["end_y"] * self.scale)
             if ray["in_fov"] > 0:
-                pygame.draw.line(self.display, (200, 100, 0), start, end)
+                if ray["length"] < ray["max_length"]:
+                    pygame.draw.line(self.display, (180, 100, 0), start, end)
+                else:
+                    pygame.draw.line(self.display, (150, 150, 0), start, end)
             else:
                 pygame.draw.line(self.display, (50, 50, 50), start, end)
 
