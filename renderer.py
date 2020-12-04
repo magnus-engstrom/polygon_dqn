@@ -60,30 +60,30 @@ class Renderer:
                     pygame.draw.rect(self.display, (int(shading/2), shading+30, int(shading/2)), rect)
 
     def draw_2D(self, env_lines, rays, targets, agent_positions, closest_target, past_position):
+        resize = 0.4
+        ax = (rays[0]["start_x"] * self.scale) * resize
+        ay = (rays[0]["start_y"] * self.scale) * resize
         for env_line in env_lines:
-            start = (env_line["start_x"] * self.scale, env_line["start_y"] * self.scale)
-            end = (env_line["end_x"] * self.scale, env_line["end_y"] * self.scale)
+            start = ((env_line["start_x"] * self.scale * resize - ax + (self.scale / 2)), env_line["start_y"] * self.scale * resize - ay + (self.scale / 2))
+            end = (env_line["end_x"] * self.scale * resize - ax + (self.scale / 2), env_line["end_y"] * self.scale * resize - ay + (self.scale / 2))
             pygame.draw.line(self.display, (200, 200, 200), start, end)
         for target in targets:
-            pygame.draw.circle(self.display, (50, 150, 50), [target["x"] * self.scale, target["y"] * self.scale], 5)
+            pygame.draw.circle(self.display, (50, 150, 50), [target["x"] * self.scale * resize - ax + self.scale / 2, target["y"] * self.scale * resize - ay + self.scale / 2], 5)
         for ray in rays:
-            start = (ray["start_x"] * self.scale, ray["start_y"] * self.scale)
-            end = (ray["end_x"] * self.scale, ray["end_y"] * self.scale)
+            start = (self.scale / 2, self.scale / 2)
+            end = ((ray["end_x"] * self.scale * resize - ax + self.scale / 2) , ray["end_y"] * self.scale * resize - ay + self.scale / 2)
             if ray["in_fov"] > 0:
-                if ray["length"] < ray["max_length"]:
-                    pygame.draw.line(self.display, (180, 100, 0), start, end)
-                else:
-                    pygame.draw.line(self.display, (150, 150, 0), start, end)
+                pygame.draw.line(self.display, (150 + 50* (1-(ray["length"] / ray["max_length"]))*2, 100+25*(1-(ray["length"] / ray["max_length"])), 0), start, end)
             else:
                 pygame.draw.line(self.display, (50, 50, 50), start, end)
 
-        pygame.draw.circle(self.display, (200, 200, 0), (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 5)
-        pygame.draw.circle(self.display, (200, 200, 0), (past_position[0] * self.scale, past_position[1] * self.scale), 5, 1)
+        pygame.draw.circle(self.display, (200, 200, 0), (self.scale / 2, self.scale / 2), 5)
+        pygame.draw.circle(self.display, (200, 200, 0), (past_position[0] * self.scale * resize - ax + self.scale / 2, past_position[1] * self.scale * resize - ay + self.scale / 2), 5, 1)
         for ap in agent_positions:
-            pygame.draw.circle(self.display, (150, 50, 50), (ap[0] * self.scale, ap[1] * self.scale), 5, 1)
+            pygame.draw.circle(self.display, (150, 50, 50), (ap[0] * self.scale * resize - ax + self.scale / 2, ap[1] * self.scale * resize - ay + self.scale / 2), 5, 1)
         pygame.draw.line(self.display, (100, 100, 100), 
-            (rays[0]["start_x"] * self.scale, rays[0]["start_y"] * self.scale), 
-            (closest_target[0] * self.scale, closest_target[1] * self.scale)
+            (self.scale / 2, self.scale / 2), 
+            (closest_target[0] * self.scale * resize - ax + self.scale / 2, closest_target[1] * self.scale * resize - ay + self.scale / 2)
         )
 
     def draw_reward(self, reward, agg_reward, target_bearing):

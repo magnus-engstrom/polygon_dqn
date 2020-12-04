@@ -53,13 +53,10 @@ impl Ray {
         let mut max_y = position.y();
 
         let mut rays = vec![];
-        let mut a = fov / ray_count;
-        //let mut x = (fov / 2.0) * -1.0;
+        //let a = fov / ray_count;
         for i in 0..(ray_count) as i32 {
             let x = i as f64 / (ray_count-1.0) - 0.5;
             let angle = x.atan2(1.0-fov);
-            //let angle = x; //x.atan2(1.0-fov);
-            //x = x + a;
             let ray = Ray::new(angle, length, direction, position, true);
             let (tmp_min_x, tmp_min_y, tmp_max_x, tmp_max_y) = utils::min_max_point(&ray.line.end, min_x, min_y, max_x, max_y);
             min_x = tmp_min_x;

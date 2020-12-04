@@ -12,12 +12,12 @@ import numpy as np
 from tb import ModifiedTensorBoard
 
 class Model:
-    def __init__(self, n_actions, n_features):
+    def __init__(self, n_actions):
         tf.random.set_seed(1)
         random.seed(1)
         np.random.seed(1)
         self.total_memory = deque(maxlen=250000)
-        self.min_batch_samples = 1000
+        self.min_batch_samples = 10
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.998
@@ -26,13 +26,9 @@ class Model:
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.997
-        self.n_features = n_features
-        self.training_count = 0
-        self.name = "model_test_225"
+        self.name = "model_test_227"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
-        self.update_counter = 0
-        self.update_model_at = 7
         self.mean_targets_found = 0
         self.max_mean_targets_found = 0
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
@@ -44,20 +40,18 @@ class Model:
             if not self.model:
                 print("creating model")
                 print((1, episode_memory[-1][0][0]))
-                self.model = self.__create_neural_network(self.n_features, self.n_actions)
-                self.target_model = self.__create_neural_network(self.n_features, self.n_actions)
+                self.model = self.__create_neural_network(len(episode_memory[-1][0][0]), self.n_actions)
+                self.target_model = self.__create_neural_network(len(episode_memory[-1][0][0]), self.n_actions)
                 self.target_model.set_weights(self.model.get_weights())
             self.training_started = True
             self.tensorboard_callback.update_stats(
                 reward_per_step=reward_per_step,
                 targets_found=targets_found,
-                update_counter=self.update_counter,
                 learning_rate=self.learning_rate,
                 epsilon=self.epsilon,
                 mean_targets_found = mean_targets_found,
                 mean_rewards = mean_rewards
             )
-            print("- - - -", self.mean_targets_found, mean_targets_found)
             self.__train()
             if self.mean_targets_found <= mean_targets_found:
                 self.model.save("models/" + self.name + "_latest")
@@ -74,13 +68,6 @@ class Model:
             if self.max_mean_targets_found < self.mean_targets_found:
                 self.model.save("models/" + self.name + "_best")
                 self.max_mean_targets_found = self.mean_targets_found
-            # self.update_counter += 1
-            # if self.update_counter == self.update_model_at: 
-            #     self.update_counter = 0
-            #     print("### updating target model ###")
-            #     self.target_model.set_weights(self.model.get_weights())
-
-            self.training_count += 1
 
     def predict_action(self, state, no_exploration):
             if (no_exploration or random.uniform(0,1) > self.epsilon) and len(state) > 0 and random.uniform(0,1) > self.min_epsilon:
@@ -110,16 +97,12 @@ class Model:
         print(target_vec)
 
     def __create_neural_network(self, n_features, n_actions):
-        # lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-        #     self.learning_rate, decay_steps=100000, decay_rate=0.99, staircase=True
-        # )
         def huber_loss(a, b, in_keras=True):
             error = a - b
             quadratic_term = error*error / 2
             linear_term = abs(error) - 1/2
             use_linear_term = (abs(error) > 1.0)
             if in_keras:
-                # Keras won't let us multiply floats by booleans, so we explicitly cast the booleans to floats
                 use_linear_term = K.cast(use_linear_term, 'float32')
             return use_linear_term * linear_term + (1-use_linear_term) * quadratic_term
         model = Sequential()
@@ -127,6 +110,5 @@ class Model:
         model.add(Dense(256, activation='relu'))
         model.add(Dense(256, activation='relu'))
         model.add(Dense(n_actions, activation='linear'))
-        #model.compile(loss="mse", optimizer=Adam(lr=self.learning_rate), metrics=['accuracy'])
         model.compile(loss=huber_loss, optimizer=Adam(lr=self.learning_rate), metrics=['accuracy'])
         return model

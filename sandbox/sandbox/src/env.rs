@@ -15,7 +15,6 @@ pub struct Env {
     pub targets: Vec<Point<f64>>,
     pub original_targets: Vec<Point<f64>>,
     pub last_state: Vec<f64>,
-    pub action_space: Vec<f64>,
     pub starting_points: Vec<Point<f64>>,
     pub prev_target_dist: f64,
     pub prev_past_position_dist: f64,
@@ -37,17 +36,6 @@ impl Env {
             rng.gen_range(-3.14, 3.14)
         );
         let original_targets = targets.to_vec();
-        let action_space = vec![
-            //-25.0f64.to_radians(),
-            //-24.0f64.to_radians(),
-            -10.0f64.to_radians(),
-            -1.0f64.to_radians(),
-            0.0f64.to_radians(),
-            1.0f64.to_radians(),
-            10.0f64.to_radians(),
-            //24.0f64.to_radians(),
-            //25.0f64.to_radians(),
-        ];
         Env {
             line_strings,
             agent,
@@ -56,7 +44,6 @@ impl Env {
             last_state: vec![],
             scalex,
             scaley,
-            action_space,
             prev_target_dist: 1.0,
             starting_points,
             prev_past_position_dist: 0.0,
@@ -100,17 +87,18 @@ impl Env {
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
         let mut full_move = false;
         let mut reward = -0.06;
-        let direction_change = self.action_space.get(action as usize).unwrap().clone();
+        let direction_change = self.agent.action_space.get(action as usize).unwrap().clone();
         if direction_change.abs() < 3.0f64.to_radians() {
             full_move = true
         }
         let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position, false);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
             let state = self.last_state.iter().copied().collect();
+            self.agent.add_to_memory(&state, action, reward, true);
             return (state, -3.0, true);
         }
         self.prev_past_position_dist = self.agent.past_position_distance;
-        self.agent.step(direction_change, full_move);
+        self.agent.step(action as usize, full_move);
         self.update_agent();
         let (state ,target_in_sight) = self.get_state();
         let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
@@ -123,8 +111,8 @@ impl Env {
         } else {
             self.agent.age = self.agent.age + 1.0;
         }  
-        for i in 0..self.action_space.len() {
-            let pr = Ray::new(self.action_space.get(i).unwrap().clone(), self.agent.speed*3.0, self.agent.direction, self.agent.position, false);
+        for i in 0..self.agent.action_space.len() {
+            let pr = Ray::new(self.agent.action_space.get(i).unwrap().clone(), self.agent.speed*3.0, self.agent.direction, self.agent.position, false);
             if utils::intersects(&pr, &self.line_strings.iter().collect()) {
                 reward = -0.2;
                 break;
@@ -152,7 +140,8 @@ impl Env {
         }
         self.prev_target_dist = distance_to_target;
         self.last_state = state.iter().copied().collect();
-        return (state, reward, false);
+        self.agent.add_to_memory(&state, action, reward, false);
+        return (state, reward, !self.agent.active);
     }
 
     pub fn get_agent_rays(&self) -> Vec<HashMap<&str, f64>> {

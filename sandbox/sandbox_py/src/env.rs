@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use pyo3::prelude::*;
 use sandbox::env::Env as REnv;
 use sandbox::utils;
+use sandbox::state_transition::StateTransition;
 #[pyclass]
 pub(crate) struct Env {
     pub env: REnv,
@@ -20,7 +21,7 @@ impl Env {
 
     #[getter(action_space)]
     fn get_action_space(&self) -> PyResult<Vec<f64>> {
-        Ok(self.env.action_space.clone())
+        Ok(self.env.agent.action_space.clone())
     }
 
     #[getter(lines)]
@@ -43,6 +44,12 @@ impl Env {
         Ok(self.env.agent.age)
     }
 
+    #[getter(agent_memory_size)]
+    fn get_agent_memory_size(&self) -> PyResult<i32> {
+        Ok(self.env.agent.memory.len() as i32)
+    }
+
+
     #[getter(agent_active)]
     fn get_agent_active(&self) -> PyResult<bool> {
         Ok(self.env.agent.active)
@@ -64,12 +71,18 @@ impl Env {
         Ok(self.env.agent.closest_target.x_y())
     }
 
+    pub fn agent_memory(&self) -> PyResult<Vec<Py<PyAny>>> {
+        Ok(self.env.agent.memory.clone())
+    }
+
     pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
         self.env.step(action)
     }
     pub fn get_agent_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
         Ok(self.env.get_agent_rays())
     }
+    
+
 
     pub fn get_agent_targets_count(&self) -> PyResult<i32> {
         Ok(self.env.agent.targets_count)

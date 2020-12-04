@@ -20,7 +20,9 @@ fn load_json(path: String) -> GeometryCollection<f64> {
 pub fn import_geometry(path: String) -> (Vec<LineString<f64>>, Vec<Point<f64>>, f64, f64) {
     let collection = load_json(path);
     let (mut lines, mut targets) = env_from_geometry(collection);
-    let (scalex, scaley, xmin, ymin, _xmax, _ymax) = calculate_scales(&lines);
+    let (mut scalex, mut scaley, xmin, ymin, _xmax, _ymax) = calculate_scales(&lines);
+    scalex = 0.02007599999999954 / 5.0;
+    scaley = 0.008532999999999902 / 5.0;
     scale_geometry(scalex, scaley, xmin, ymin, &mut lines, &mut targets);
     (lines, targets, scalex, scaley)
 }
@@ -76,6 +78,8 @@ pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f6
     }
     let scalex = 1.0 * (xmax - xmin);
     let scaley = 1.0 * (ymax - ymin);
+    println!("scale x {}", scalex);
+    println!("scale y {}", scaley);
     (scalex, scaley, xmin, ymin, xmax, ymax)
 }
 
