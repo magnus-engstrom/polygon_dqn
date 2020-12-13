@@ -59,7 +59,7 @@ class Renderer:
                     rect = [screen_width + target_x + j, top, 1, wall_height]
                     pygame.draw.rect(self.display, (int(shading/2), shading+30, int(shading/2)), rect)
 
-    def draw_2D(self, env_lines, rays, targets, agent_positions, closest_target, past_position):
+    def draw_2D(self, env_lines, rays, targets, closest_target, past_position, collected_targets):
         resize = 0.4
         ax = (rays[0]["start_x"] * self.scale) * resize
         ay = (rays[0]["start_y"] * self.scale) * resize
@@ -79,26 +79,25 @@ class Renderer:
 
         pygame.draw.circle(self.display, (200, 200, 0), (self.scale / 2, self.scale / 2), 5)
         pygame.draw.circle(self.display, (200, 200, 0), (past_position[0] * self.scale * resize - ax + self.scale / 2, past_position[1] * self.scale * resize - ay + self.scale / 2), 5, 1)
-        for ap in agent_positions:
-            pygame.draw.circle(self.display, (150, 50, 50), (ap[0] * self.scale * resize - ax + self.scale / 2, ap[1] * self.scale * resize - ay + self.scale / 2), 5, 1)
         pygame.draw.line(self.display, (100, 100, 100), 
             (self.scale / 2, self.scale / 2), 
             (closest_target[0] * self.scale * resize - ax + self.scale / 2, closest_target[1] * self.scale * resize - ay + self.scale / 2)
         )
+        for ct in collected_targets:
+            pygame.draw.circle(self.display, (50, 50, 0), (ct[0] * self.scale * resize - ax + self.scale / 2, ct[1] * self.scale * resize - ay + self.scale / 2), 5)
+        
 
-    def draw_reward(self, reward, agg_reward, target_bearing):
+    def draw_reward(self, reward, target_bearing):
         textsurface = self.font_display.render(str(reward), False, (255, 255, 255))
         self.display.blit(textsurface,(650,350))
-        textsurface = self.font_display.render(str(agg_reward), False, (150, 150, 150))
-        self.display.blit(textsurface,(650,420))
         textsurface = self.font_display.render(str(target_bearing), False, (150, 150, 150))
         self.display.blit(textsurface,(650,460))
 
-    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, agg_reward, agent_positions, closest_target, can_see_target, past_position):
+    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, closest_target, can_see_target, past_position, collected_targets):
         self.display.fill((10, 10, 10))
-        self.draw_2D(env_lines, rays, targets, agent_positions, closest_target, past_position)
+        self.draw_2D(env_lines, rays, targets, closest_target, past_position, collected_targets)
         self.draw_3D(rays, target_bearing, target_distance, can_see_target)
-        self.draw_reward(reward, agg_reward, target_bearing)
+        self.draw_reward(reward, target_bearing)
         pygame.display.update()
         #pygame.display.flip()
         self.clock.tick(22)

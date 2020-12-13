@@ -1,52 +1,26 @@
 use crate::agent::Agent;
 use crate::utils;
-use geo::{LineString, Point, Closest};
+use geo::{LineString, Point};
 use std::collections::HashMap;
 use crate::ray::Ray;
 use geo::euclidean_distance::EuclideanDistance;
-use geo::bearing::Bearing;
-use geo::closest_point::ClosestPoint;
-use rand::Rng;
+use rand;
 use rand::seq::SliceRandom;
 
 pub struct Env {
     pub line_strings: Vec<LineString<f64>>,
     pub agent: Agent,
     pub targets: Vec<Point<f64>>,
-    pub original_targets: Vec<Point<f64>>,
-    pub last_state: Vec<f64>,
-    pub starting_points: Vec<Point<f64>>,
-    pub prev_target_dist: f64,
-    pub prev_past_position_dist: f64,
-    scalex: f64,
-    scaley: f64,
 }
 
 impl Env {
     pub fn new(path: String) -> Self {
         let (line_strings, targets, scalex, scaley) = utils::import_geometry(path);
-        let mut rng = rand::thread_rng();
-        let starting_points = vec![
-            Point::new(0.1, 0.1),
-            Point::new(0.51, 0.51),
-            Point::new(0.7, 0.9),
-        ];
-        let agent = Agent::new(
-            starting_points.choose(&mut rand::thread_rng()).unwrap().clone(), 
-            rng.gen_range(-3.14, 3.14)
-        );
-        let original_targets = targets.to_vec();
+        let agent = Agent::new(targets.choose(&mut rand::thread_rng()).unwrap().clone());
         Env {
             line_strings,
             agent,
             targets,
-            original_targets,
-            last_state: vec![],
-            scalex,
-            scaley,
-            prev_target_dist: 1.0,
-            starting_points,
-            prev_past_position_dist: 0.0,
         }
     }
 
@@ -93,20 +67,26 @@ impl Env {
         }
         let step_ray = Ray::new(direction_change, self.agent.speed, self.agent.direction, self.agent.position, false);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
-            let state = self.last_state.iter().copied().collect();
+            let state = self.agent.last_state.iter().copied().collect();
             self.agent.add_to_memory(&state, action, reward, true);
             return (state, -3.0, true);
         }
-        self.prev_past_position_dist = self.agent.past_position_distance;
+        let prev_past_position_dist = self.agent.past_position_distance;
         self.agent.step(action as usize, full_move);
         self.update_agent();
         let (state ,target_in_sight) = self.get_state();
-        let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
+        let mut possible_targets = vec![];
+        for target in self.targets.iter() {
+            if !self.agent.collected_targets.iter().any(|&t| t==target.clone()) {
+                possible_targets.push(target);
+            }
+        }
+        let closest_target = utils::closest_of(possible_targets.iter(), self.agent.position).unwrap();
         let mut distance_to_target = self.agent.position.euclidean_distance(&closest_target);
         self.agent.closest_target = closest_target;
         reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
-        if self.last_state.len() > 0 && self.prev_target_dist - distance_to_target > 0.0 {
-            let distance_score = 1.0 - (distance_to_target / self.prev_target_dist);
+        if self.agent.last_state.len() > 0 && self.agent.prev_target_dist - distance_to_target > 0.0 {
+            let distance_score = 1.0 - (distance_to_target / self.agent.prev_target_dist);
             reward = reward + (distance_score); 
         } else {
             self.agent.age = self.agent.age + 1.0;
@@ -118,8 +98,8 @@ impl Env {
                 break;
             }
         }
-        if !target_in_sight && self.prev_past_position_dist - self.agent.past_position_distance > 0.0 {
-            let mut backtrack_penalty =  (1.0 - (distance_to_target / self.prev_target_dist)) * 2.0;
+        if !target_in_sight && prev_past_position_dist - self.agent.past_position_distance > 0.0 {
+            let mut backtrack_penalty =  (1.0 - (distance_to_target / self.agent.prev_target_dist)) * 2.0;
             backtrack_penalty = backtrack_penalty + (1.0 - (self.agent.past_position_bearing.abs() / 3.14)) / 4.0;
             if backtrack_penalty > 0.0 {
                 reward = reward + backtrack_penalty * -1.0;
@@ -129,17 +109,10 @@ impl Env {
         if distance_to_target < 0.02 {
             reward = 3.5;
             distance_to_target = 1.0;
-            self.agent.age = 1.0;
-            self.targets = self.targets.iter().filter(|p| **p != closest_target).cloned().collect();
-            if self.targets.len() < 1 {
-                self.targets = self.original_targets.to_vec();
-            }
-            self.agent.targets_count = self.agent.targets_count + 1;
-            self.agent.past_positions = vec![self.agent.position];
-            self.agent.position_ticker = 0;
+            self.agent.collect_target(closest_target, self.targets.len() as i32);
         }
-        self.prev_target_dist = distance_to_target;
-        self.last_state = state.iter().copied().collect();
+        self.agent.prev_target_dist = distance_to_target;
+        self.agent.last_state = state.iter().copied().collect();
         self.agent.add_to_memory(&state, action, reward, false);
         return (state, reward, !self.agent.active);
     }
@@ -199,15 +172,8 @@ impl Env {
     }
 
     pub fn reset(&mut self) {
-        let mut rng = rand::thread_rng();
-        self.targets = self.original_targets.to_vec();
         let start = self.targets.choose(&mut rand::thread_rng()).unwrap().clone();
-        let mut agent = Agent::new(
-            start, 
-            rng.gen_range(-3.14, 3.14)
-        );
-        self.targets = self.targets.iter().filter(|p| **p != start).cloned().collect();
-        self.last_state = vec![];
+        let mut agent = Agent::new(start);
         agent.cast_rays();
         self.agent = agent;
         self.update_agent();

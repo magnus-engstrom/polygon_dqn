@@ -4,10 +4,8 @@ import tensorflow as tf
 from tensorflow.keras.layers import InputLayer, Dense
 from tensorflow.keras import Sequential
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Activation
-from tensorflow.keras.layers import BatchNormalization
 import numpy as np
 from tb import ModifiedTensorBoard
 
@@ -17,7 +15,7 @@ class Model:
         random.seed(1)
         np.random.seed(1)
         self.total_memory = deque(maxlen=250000)
-        self.min_batch_samples = 10
+        self.min_batch_samples = 500
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.998
@@ -33,7 +31,7 @@ class Model:
         self.max_mean_targets_found = 0
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
-    def store_memory_and_train(self, episode_memory, reward_per_step, targets_found, mean_targets_found, mean_rewards):
+    def store_memory_and_train(self, episode_memory, targets_found, mean_targets_found):
         self.total_memory += episode_memory
         print(len(self.total_memory), "rows in memory")
         if len(self.total_memory) >= self.batch_size * self.min_batch_samples:
@@ -45,12 +43,10 @@ class Model:
                 self.target_model.set_weights(self.model.get_weights())
             self.training_started = True
             self.tensorboard_callback.update_stats(
-                reward_per_step=reward_per_step,
                 targets_found=targets_found,
                 learning_rate=self.learning_rate,
                 epsilon=self.epsilon,
-                mean_targets_found = mean_targets_found,
-                mean_rewards = mean_rewards
+                mean_targets_found = mean_targets_found
             )
             self.__train()
             if self.mean_targets_found <= mean_targets_found:

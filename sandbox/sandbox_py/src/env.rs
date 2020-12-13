@@ -1,9 +1,7 @@
 use std::collections::HashMap;
-
 use pyo3::prelude::*;
 use sandbox::env::Env as REnv;
 use sandbox::utils;
-use sandbox::state_transition::StateTransition;
 #[pyclass]
 pub(crate) struct Env {
     pub env: REnv,
@@ -55,6 +53,10 @@ impl Env {
         Ok(self.env.agent.active)
     }
 
+    #[getter(agent_collected_targets)]
+    fn get_agent_collected_targets(&self) -> PyResult<Vec<(f64, f64)>> {
+        Ok(self.env.agent.collected_targets.iter().map(|t| t.x_y()).collect())
+    }
 
     #[getter(agent_position)]
     fn get_agent_position(&self) -> PyResult<(f64, f64)> {
@@ -81,11 +83,10 @@ impl Env {
     pub fn get_agent_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
         Ok(self.env.get_agent_rays())
     }
-    
 
 
     pub fn get_agent_targets_count(&self) -> PyResult<i32> {
-        Ok(self.env.agent.targets_count)
+        Ok(self.env.agent.collected_targets.len() as i32)
     }
 
     pub fn get_state(&mut self) -> Vec<f64> {

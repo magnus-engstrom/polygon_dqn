@@ -1,9 +1,9 @@
 use geo::{Point, Rect};
 use geo::euclidean_distance::EuclideanDistance;
 use crate::utils;
-use crate::state_transition::StateTransition;
 use crate::ray::Ray;
 use pyo3::prelude::*;
+use rand::Rng;
 
 pub struct Agent {
     pub speed: f64,
@@ -15,7 +15,6 @@ pub struct Agent {
     pub rays: Vec<Ray>,
     pub rays_bb: Rect<f64>,
     pub age: f64,
-    pub targets_count: i32,
     pub closest_target: Point<f64>,
     pub max_age: f64,
     pub active: bool,
@@ -26,14 +25,17 @@ pub struct Agent {
     pub action_space: Vec<f64>,
     pub prev_state: Vec<f64>,
     pub memory: Vec<Py<PyAny>>,
+    pub collected_targets: Vec<Point<f64>>,
+    pub prev_target_dist: f64,
+    pub last_state: Vec<f64>,
 }
 
 impl Agent {
-    pub(crate) fn new(position: Point<f64>, direction: f64) -> Self {
+    pub(crate) fn new(position: Point<f64>) -> Self {
         Agent {
             speed: 0.0045,
             age: 1.0,
-            direction,
+            direction: rand::thread_rng().gen_range(-3.14, 3.14),
             ray_count: 49.0,
             fov: 0.8,
             visibility: 0.6,
@@ -41,13 +43,14 @@ impl Agent {
             position: position,
             rays: vec![],
             rays_bb:Rect::new((f64::NEG_INFINITY,f64::NEG_INFINITY),(f64::INFINITY,f64::INFINITY)),
-            targets_count: 0,
+            collected_targets: vec![position],
             closest_target: Point::new(0.0,0.0),
             active: true,
             position_ticker: 50,
             past_positions: vec![position],
             past_position_distance: 0.0,
             past_position_bearing: 0.0,
+            last_state: vec![],
             action_space: vec![
                 -10.0f64.to_radians(),
                 -1.0f64.to_radians(),
@@ -57,6 +60,7 @@ impl Agent {
             ],
             prev_state: vec![],
             memory: vec![],
+            prev_target_dist: 1.0,
         }
     }
 
@@ -87,6 +91,16 @@ impl Agent {
             self.memory.push(key_vals.to_object(py));
         }
         self.prev_state = new_state.clone();
+    }
+
+    pub fn collect_target(&mut self, target: Point<f64>, n_targets: i32) {
+        self.age = 1.0;
+        self.collected_targets.push(target);
+        if self.collected_targets.len() as i32 == n_targets {
+            self.collected_targets = vec![];
+        }
+        self.past_positions = vec![self.position];
+        self.position_ticker = 0;        
     }
 
     pub fn step(&mut self, action: usize, full_move: bool) {
