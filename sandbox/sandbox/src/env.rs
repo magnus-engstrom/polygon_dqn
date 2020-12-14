@@ -144,7 +144,13 @@ impl Env {
         let mut state = vec![];
         let mut can_see_target = false;
         let step_ray = Ray::new(0.0, self.agent.speed, self.agent.direction, self.agent.position, false);
-        let closest_target = utils::closest_of(self.targets.iter(), self.agent.position).unwrap();
+        let mut possible_targets = vec![];
+        for target in self.targets.iter() {
+            if !self.agent.collected_targets.iter().any(|&t| t==target.clone()) {
+                possible_targets.push(target);
+            }
+        }
+        let closest_target = utils::closest_of(possible_targets.iter(), self.agent.position).unwrap();
         let distance_to_target = self.agent.position.euclidean_distance(&closest_target);
         let relative_bearing_to_target = utils::relative_bearing_to_target(self.agent.position, step_ray.line.end_point(), closest_target);
         if relative_bearing_to_target.abs() <= self.agent.fov * 1.3 {
