@@ -9,6 +9,7 @@ use line_intersection::{LineInterval, LineRelation};
 use std::fs;
 use geo::closest_point::ClosestPoint;
 use geo::bearing::Bearing;
+use rayon::prelude::*;
 
 fn load_json(path: String) -> GeometryCollection<f64> {
     let path = String::from(format!("{}", path));
@@ -17,14 +18,14 @@ fn load_json(path: String) -> GeometryCollection<f64> {
     quick_collection(&geojson).unwrap()
 }
 
-pub fn import_geometry(path: String) -> (Vec<LineString<f64>>, Vec<Point<f64>>, f64, f64) {
+pub fn import_geometry(path: String) -> (Vec<LineString<f64>>, Vec<Point<f64>>, f64, f64, f64, f64) {
     let collection = load_json(path);
     let (mut lines, mut targets) = env_from_geometry(collection);
-    let (mut scalex, mut scaley, xmin, ymin, _xmax, _ymax) = calculate_scales(&lines);
-    scalex = 0.02007599999999954 / 5.0;
-    scaley = 0.008532999999999902 / 5.0;
+    let (xmin, ymin, _xmax, _ymax) = calculate_scales(&lines);
+    let scalex = 0.02007599999999954 / 5.0;
+    let scaley = 0.008532999999999902 / 5.0;
     scale_geometry(scalex, scaley, xmin, ymin, &mut lines, &mut targets);
-    (lines, targets, scalex, scaley)
+    (lines, targets, scalex, scaley, xmin, ymin)
 }
 
 pub fn scale_geometry(
@@ -63,7 +64,7 @@ pub fn env_from_geometry(mut collection: GeometryCollection<f64>) -> (Vec<LineSt
     (lines, points)
 }
 
-pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f64, f64) {
+pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64) {
     let mut xmin: f64 = 999.9;
     let mut ymin: f64 = 999.9;
     let mut xmax: f64 = 0.0;
@@ -76,11 +77,12 @@ pub fn calculate_scales(lines: &Vec<LineString<f64>>) -> (f64, f64, f64, f64, f6
             ymax = ymax.max(point.y());
         }
     }
-    let scalex = 1.0 * (xmax - xmin);
-    let scaley = 1.0 * (ymax - ymin);
-    println!("scale x {}", scalex);
-    println!("scale y {}", scaley);
-    (scalex, scaley, xmin, ymin, xmax, ymax)
+    //let scalex = 1.0 * (xmax - xmin);
+    //let scaley = 1.0 * (ymax - ymin);
+    //println!("scale x {}", scalex);
+    //println!("scale y {}", scaley);
+    //(scalex, scaley, xmin, ymin, xmax, ymax)
+    (xmin, ymin, xmax, ymax)
 }
 
 pub fn cull_line_strings<'a>(
@@ -200,7 +202,7 @@ pub fn find_intersections_seq(
     line_strings: &Vec<&LineString<f64>>,
     origin_position: Point<f64>,
 ) {
-    rays.iter_mut()
+    rays.par_iter_mut()
         .for_each(|ray| find_intersections(ray, line_strings, origin_position));
 }
 
@@ -209,7 +211,7 @@ pub fn intersects(
     ray: &Ray,
     line_strings: &Vec<&LineString<f64>>,
 ) -> bool {
-    for line in line_strings.iter() {
+    for line in line_strings {
         let intersections = intersections(&ray.line_string, line);
         if intersections.len() > 0 {
             return true

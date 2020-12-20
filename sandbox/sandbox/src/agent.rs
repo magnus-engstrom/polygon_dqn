@@ -1,9 +1,10 @@
-use geo::{Point, Rect};
+use geo::{Point, Rect, LineString};
 use geo::euclidean_distance::EuclideanDistance;
 use crate::utils;
 use crate::ray::Ray;
 use pyo3::prelude::*;
 use rand::Rng;
+use std::collections::HashMap;
 
 pub struct Agent {
     pub speed: f64,
@@ -28,10 +29,12 @@ pub struct Agent {
     pub collected_targets: Vec<Point<f64>>,
     pub prev_target_dist: f64,
     pub last_state: Vec<f64>,
+    pub coordinates_path: Vec<Point<f64>>,
+    pub env_line_strings: Vec<LineString<f64>>,
 }
 
 impl Agent {
-    pub(crate) fn new(position: Point<f64>) -> Self {
+    pub(crate) fn new(position: Point<f64>, env_line_strings: Vec<LineString<f64>>) -> Self {
         Agent {
             speed: 0.0045,
             age: 1.0,
@@ -61,6 +64,8 @@ impl Agent {
             prev_state: vec![],
             memory: vec![],
             prev_target_dist: 1.0,
+            coordinates_path: vec![position],
+            env_line_strings,
         }
     }
 
@@ -75,6 +80,30 @@ impl Agent {
         );
         self.rays = rays;
         self.rays_bb = rays_bb;
+    }
+
+
+    pub fn get_rays(&self) -> Vec<HashMap<&str, f64>> {
+        let mut res = vec![];
+        for ray in self.rays.iter() {
+            for line in ray.line_string.lines() {
+                let hashmap: HashMap<&str, f64> = [
+                    ("start_x", line.start.x),
+                    ("start_y", line.start.y),
+                    ("end_x", line.end.x),
+                    ("end_y", line.end.y),
+                    ("length", ray.length),
+                    ("max_length", ray.max_length),
+                    ("angle", ray.angle),
+                    ("in_fov", ray.in_fov as i32 as f64),
+                ]
+                    .iter()
+                    .cloned()
+                    .collect();
+                res.push(hashmap);
+            }
+        }
+        res
     }
 
     pub fn add_to_memory(&mut self, new_state: &Vec<f64>, action: i32, reward: f64, done: bool) {
@@ -139,6 +168,18 @@ impl Agent {
             closest_past_position
         );
         self.position = new_position;
+        self.coordinates_path.push(self.position);
         self.cast_rays();
+        self.update();
+    }
+
+    pub fn update(&mut self) {
+        let intersecting_line_strings =
+            utils::cull_line_strings_precull(&mut self.rays_bb, &self.env_line_strings, self.position);
+        utils::find_intersections_seq(&mut self.rays, &intersecting_line_strings, self.position)
+    }
+
+    pub fn get_coordinates_path(&self) -> Vec<Point<f64>> {
+        return self.coordinates_path.clone()
     }
 }

@@ -15,7 +15,7 @@ class Model:
         random.seed(1)
         np.random.seed(1)
         self.total_memory = deque(maxlen=250000)
-        self.min_batch_samples = 750
+        self.min_batch_samples = 5
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.998
@@ -24,7 +24,7 @@ class Model:
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.997
-        self.name = "model_test_228"
+        self.name = "model_test_231"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0

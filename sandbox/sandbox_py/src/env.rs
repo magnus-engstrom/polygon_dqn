@@ -2,6 +2,16 @@ use std::collections::HashMap;
 use pyo3::prelude::*;
 use sandbox::env::Env as REnv;
 use sandbox::utils;
+use geo::algorithm::map_coords::MapCoordsInplace;
+use geojson::{Feature, GeoJson, Geometry, FeatureCollection};
+use geo;
+use serde_json::{Map};
+use line_intersection::{LineInterval, LineRelation};
+use rand;
+use rand::seq::SliceRandom;
+use rand::Rng;
+use std::cmp;
+
 #[pyclass]
 pub(crate) struct Env {
     pub env: REnv,
@@ -10,16 +20,15 @@ pub(crate) struct Env {
 #[pymethods]
 impl Env {
     #[new]
-    fn new(path: String) -> Self {
-        let env = REnv::new(path);
+    fn new(path: String, agent_count: i32) -> Self {
+        let env = REnv::new(path, agent_count);
         Env {
             env
         }
     }
 
-    #[getter(action_space)]
-    fn get_action_space(&self) -> PyResult<Vec<f64>> {
-        Ok(self.env.agent.action_space.clone())
+    fn action_space(&self, agent_index: i32) -> PyResult<Vec<f64>> {
+        Ok(self.env.agents[agent_index as usize].action_space.clone())
     }
 
     #[getter(lines)]
@@ -32,75 +41,134 @@ impl Env {
         Ok(self.env.get_targets_as_points())
     }
 
-    #[getter(ray_count)]
-    fn get_ray_count(&self) -> PyResult<f64> {
-        Ok(self.env.agent.ray_count + 2.0)
+    fn ray_count(&self, agent_index: i32) -> PyResult<f64> {
+        Ok(self.env.agents[agent_index as usize].ray_count + 2.0)
     }
 
-    #[getter(agent_age)]
-    fn get_agent_age(&self) -> PyResult<f64> {
-        Ok(self.env.agent.age)
+    fn agent_age(&self, agent_index: i32) -> PyResult<f64> {
+        Ok(self.env.agents[agent_index as usize].age)
     }
 
-    #[getter(agent_memory_size)]
-    fn get_agent_memory_size(&self) -> PyResult<i32> {
-        Ok(self.env.agent.memory.len() as i32)
+    fn agent_memory_size(&self, agent_index: i32) -> PyResult<i32> {
+        Ok(self.env.agents[agent_index as usize].memory.len() as i32)
+    }
+
+    pub fn agent_active(&self, agent_index: i32) -> PyResult<bool> {
+        Ok(self.env.agents[agent_index as usize].active)
+    }
+
+    fn agent_collected_targets(&self, agent_index: i32) -> PyResult<Vec<(f64, f64)>> {
+        Ok(self.env.agents[agent_index as usize].collected_targets.iter().map(|t| t.x_y()).collect())
+    }
+
+    pub fn agent_position(&self, agent_index: i32) -> PyResult<(f64, f64)> {
+        Ok(self.env.agents[agent_index as usize].position.x_y())
+    }
+
+    pub fn agent_past_position(&self, agent_index: i32) -> PyResult<(f64, f64)> {
+        Ok(utils::closest_of(
+            self.env.agents[agent_index as usize].past_positions.iter(), 
+            self.env.agents[agent_index as usize].position).unwrap().x_y())
+    }
+
+    pub fn agent_closest_target(&self, agent_index: i32) -> PyResult<(f64, f64)> {
+        Ok(self.env.agents[agent_index as usize].closest_target.x_y())
+    }
+
+    pub fn agent_coordinates_path(&self, a: i32) -> PyResult<String> {
+        let mut points_path_raw = self.env.agents[a as usize].get_coordinates_path().clone();
+        let mut points_path_final = vec![points_path_raw[0 as usize]];
+        let mut features = vec![];
+        let mut smoothing_point_index = 10;
+        loop {
+            let p1 = points_path_final[points_path_final.len()-1 as usize];
+            let smoothing_point = points_path_raw[smoothing_point_index as usize];
+            for (i, p2) in points_path_raw[..smoothing_point_index].iter_mut().enumerate().rev() {
+                println!("index {}", i);
+                let check_line: geo::LineString<f64> = vec![p1.x_y(), p2.x_y()].into();
+                let mut intersections = vec![];
+                for l in self.env.line_strings.iter() {
+                    for a in l.lines() {
+                        for b in check_line.lines() {
+                            let a_li = LineInterval::line_segment(a);
+                            let b_li = LineInterval::line_segment(b);
+                            match a_li.relate(&b_li) {
+                                LineRelation::DivergentIntersecting(x) => intersections.push(x),
+                                _ => {}
+                            }
+                        }
+                    }
+                    if intersections.len() > 0 {
+                        break;
+                    }
+                }                
+                if intersections.len() < 1 {
+                    if smoothing_point_index > 0 && smoothing_point_index < i {
+                        println!("inserting smoothing point");
+                        points_path_final.push(smoothing_point);
+                    }
+                    points_path_final.push(p2.clone());
+                    points_path_raw.drain(0..i);
+                    smoothing_point_index = rand::thread_rng().gen_range(0, points_path_raw.len()-1);
+                    break;
+                }
+            }
+            if points_path_raw.len() < 10 {
+                break;
+            }
+        }
+        points_path_final.push(points_path_raw[points_path_raw.len()-1 as usize]);
+        for point in points_path_final.iter_mut() {
+            point.map_coords_inplace(|&(x, y)| ((x * self.env.scalex + self.env.xmin), (y * self.env.scaley + self.env.ymin)));
+            let geometry = Geometry::new(
+                geojson::Value::from(&point.clone())
+            );
+            features.push(Feature {
+                bbox: None,
+                geometry: Some(geometry),
+                id: None,
+                properties: Some(Map::new()),
+                foreign_members: None,
+            });
+        }
+        let feature_collection = FeatureCollection {
+            bbox: None,
+            features: features,
+            foreign_members: None,
+        };
+
+        let serialized = GeoJson::from(feature_collection).to_string();
+        Ok(serialized)
+    }
+
+    pub fn agent_memory(&self, agent_index: i32) -> PyResult<Vec<Py<PyAny>>> {
+        Ok(self.env.agents[agent_index as usize].memory.clone())
+    }
+
+    pub fn step(&mut self, action: i32, agent_index: i32) -> (Vec<f64>, f64, bool) {
+        self.env.step(action, agent_index)
+    }
+    pub fn agent_rays(&self, agent_index: i32) -> PyResult<Vec<HashMap<&str, f64>>> {
+        Ok(self.env.agents[agent_index as usize].get_rays())
     }
 
 
-    #[getter(agent_active)]
-    fn get_agent_active(&self) -> PyResult<bool> {
-        Ok(self.env.agent.active)
+    pub fn agent_targets_count(&self, agent_index: i32) -> PyResult<i32> {
+        Ok(self.env.agents[agent_index as usize].collected_targets.len() as i32)
     }
 
-    #[getter(agent_collected_targets)]
-    fn get_agent_collected_targets(&self) -> PyResult<Vec<(f64, f64)>> {
-        Ok(self.env.agent.collected_targets.iter().map(|t| t.x_y()).collect())
-    }
-
-    #[getter(agent_position)]
-    fn get_agent_position(&self) -> PyResult<(f64, f64)> {
-        Ok(self.env.agent.position.x_y())
-    }
-
-    #[getter(agent_past_position)]
-    fn get_agent_past_position(&self) -> PyResult<(f64, f64)> {
-        Ok(utils::closest_of(self.env.agent.past_positions.iter(), self.env.agent.position).unwrap().x_y())
-    }
-
-    #[getter(agent_closest_target)]
-    fn get_agent_closest_target(&self) -> PyResult<(f64, f64)> {
-        Ok(self.env.agent.closest_target.x_y())
-    }
-
-    pub fn agent_memory(&self) -> PyResult<Vec<Py<PyAny>>> {
-        Ok(self.env.agent.memory.clone())
-    }
-
-    pub fn step(&mut self, action: i32) -> (Vec<f64>, f64, bool) {
-        self.env.step(action)
-    }
-    pub fn get_agent_rays(&self) -> PyResult<Vec<HashMap<&str, f64>>> {
-        Ok(self.env.get_agent_rays())
-    }
-
-
-    pub fn get_agent_targets_count(&self) -> PyResult<i32> {
-        Ok(self.env.agent.collected_targets.len() as i32)
-    }
-
-    pub fn get_state(&mut self) -> Vec<f64> {
-        let (state, _) = &mut self.env.get_state();
+    pub fn get_state(&mut self, agent_index: i32) -> Vec<f64> {
+        let (state, _) = &mut self.env.get_state(agent_index);
         return state.clone()
     }
 
-    pub fn reset(&mut self) {
-        self.env.reset()
+    pub fn reset(&mut self, agent_index: i32) {
+        self.env.reset(agent_index)
     }
 
-    pub fn update_agent(&mut self) {
-        self.env.update_agent();
-    }
+    // pub fn update_agent(&mut self) {
+    //     self.env.update_agent();
+    // }
 }
 #[cfg(test)]
 mod tests {
