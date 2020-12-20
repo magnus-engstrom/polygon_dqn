@@ -186,15 +186,12 @@ pub fn cull_line_strings_precull<'a>(
     let (min_x, min_y) = rays_bb.min().x_y();
     let (max_x, max_y) = rays_bb.max().x_y();
     let bbox = rays_bb.to_polygon();
-    let mut intersecting_line_strings = vec![];
-    for line_string in line_strings.iter() {
-        if might_intersect_line_string(line_string, min_x, min_y, max_x, max_y)
-            && bbox.intersects(line_string)
-        {
-            intersecting_line_strings.push(line_string)
-        }
-    }
-    intersecting_line_strings
+    let intersecting_line_strings = line_strings.par_iter()
+        .filter(|line_string| {
+            might_intersect_line_string(line_string, min_x, min_y, max_x, max_y)
+            && bbox.intersects(line_string.clone())
+        });
+    intersecting_line_strings.collect()
 }
 
 pub fn find_intersections_seq(
