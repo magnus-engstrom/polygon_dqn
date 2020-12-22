@@ -53,7 +53,7 @@ impl Env {
         past_position_bearing,
         ray
         */
-        5 + self.agents.get(0).unwrap().ray_count as usize
+        5 + self.agents.get(0).unwrap().ray_count as usize + 2
     }
 
     pub fn get_line_strings_as_lines(&self) -> Vec<HashMap<&str, f64>> {

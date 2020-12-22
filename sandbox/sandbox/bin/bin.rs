@@ -6,13 +6,15 @@
 */
 use sandbox::env::Env;
 use tch::{
-    kind::{FLOAT_CPU, INT64_CPU},
+    kind::{FLOAT_CPU, DOUBLE_CPU, INT64_CPU},
     nn,
     nn::OptimizerConfig,
     Device,
     Kind::Float,
     Tensor,
 };
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 // The impact of the q value of the next state on the current state's q value.
 const GAMMA: f64 = 0.99;
@@ -282,6 +284,7 @@ impl Agent {
     }
 
     fn remember(&mut self, obs: &Tensor, actions: &Tensor, reward: &Tensor, next_obs: &Tensor) {
+        //dbg!(&obs.kind(), &actions.kind(), &reward.kind(), &next_obs.kind());
         self.replay_buffer.push(obs, actions, reward, next_obs);
     }
 
@@ -329,6 +332,7 @@ impl Agent {
 }
 
 pub fn main() {
+    let mut rng: StdRng = SeedableRng::seed_from_u64(1);
     let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1);
     println!("action space: {}", env.action_space());
     println!("observation space: {}", env.observation_space());
@@ -350,24 +354,28 @@ pub fn main() {
     );
 
     for episode in 0..MAX_EPISODES {
-        let mut obs = Tensor::zeros(&[1 as _ ,num_obs as _], FLOAT_CPU);
+        let mut obs = Tensor::zeros(&[num_obs as _], FLOAT_CPU);
         env.reset(0);
-
+        dbg!(&obs);
         let mut total_reward = 0.0;
         for _ in 0..EPISODE_LENGTH {
-            let t = agent.actions(&obs);
-            let mut actions = 2.5 * 0.0 as f64;//f64::from(t);
-            println!("actions raw: {:?}", &actions);
-            actions = actions.max(-2.5).min(2.5);
-            actions = actions + 2.5;
-            println!("actions: {:?}", &actions.round());
 
-            let action_vec = vec![actions];
-            //let step = env.step(&actions.round() as i32, 0);
-            let (state, reward, done) = env.step(actions.round() as i32, 0);
+            let t = agent.actions(&obs);
+            dbg!(&t);
+            let mut actions = 2.0 * f64::from(t.get(2));
+            println!("actions raw: {:?}", &actions);
+            actions = actions.max(-2.0).min(2.0);
+            actions = actions + 2.0;
+            let action = actions.round() as i32;
+            println!("action: {}", &action);
+
+            //let actions: f64 = rng.gen_range(0.0, 4.0);
+
+            let (state, reward, done) = env.step(action, 0);
             total_reward += reward;
-            let state_t = Tensor::of_slice(&state);
-            dbg!(&state_t);
+            let state_t = Tensor::of_slice(&state).totype(Float);
+            //state_t;
+            //dbg!(&state_t);
             agent.remember(&obs, &actions.into(), &reward.into(), &state_t);
 
             if done {
