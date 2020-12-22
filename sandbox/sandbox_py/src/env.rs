@@ -78,13 +78,12 @@ impl Env {
     pub fn agent_coordinates_path(&self, a: i32) -> PyResult<String> {
         let mut points_path_raw = self.env.agents[a as usize].get_coordinates_path().clone();
         let mut points_path_final = vec![points_path_raw[0 as usize]];
-        let mut features = vec![];
         let mut smoothing_point_index = points_path_raw.len()-1;
         loop {
             let p1 = points_path_final[points_path_final.len()-1 as usize];
             let smoothing_point = points_path_raw[smoothing_point_index as usize];
             for (i, p2) in points_path_raw[..smoothing_point_index].iter_mut().enumerate().rev() {
-                println!("index {}", i);
+                //println!("index {}", i);
                 let check_line: geo::LineString<f64> = vec![p1.x_y(), p2.x_y()].into();
                 let mut intersections = vec![];
                 for l in self.env.line_strings.iter() {
@@ -108,7 +107,7 @@ impl Env {
                 }             
                 if intersections.len() < 1 {
                     if smoothing_point_index > 0 && smoothing_point_index < i {
-                        println!("inserting smoothing point");
+                        //println!("inserting smoothing point");
                         points_path_final.push(smoothing_point);
                     }
                     points_path_final.push(p2.clone());
@@ -122,27 +121,33 @@ impl Env {
             }
         }
         points_path_final.push(points_path_raw[points_path_raw.len()-1 as usize]);
+        
+        let mut return_points = vec![];
         for point in points_path_final.iter_mut() {
             point.map_coords_inplace(|&(x, y)| ((x * self.env.scalex + self.env.xmin), (y * self.env.scaley + self.env.ymin)));
-            let geometry = Geometry::new(
-                geojson::Value::from(&point.clone())
-            );
-            features.push(Feature {
-                bbox: None,
-                geometry: Some(geometry),
-                id: None,
-                properties: Some(Map::new()),
-                foreign_members: None,
-            });
+            return_points.push(point.x_y());
         }
-        let feature_collection = FeatureCollection {
+        let line_string: geo::LineString<f64> = return_points.into();
+        let geometry = Geometry::new(
+            geojson::Value::from(&line_string.clone())
+        );
+        let feature = Feature {
             bbox: None,
-            features: features,
+            geometry: Some(geometry),
+            id: None,
+            properties: Some(Map::new()),
             foreign_members: None,
         };
+        Ok(GeoJson::from(feature).to_string())
+        //Ok(return_points)
+        // let feature_collection = FeatureCollection {
+        //     bbox: None,
+        //     features: features,
+        //     foreign_members: None,
+        // };
 
-        let serialized = GeoJson::from(feature_collection).to_string();
-        Ok(serialized)
+        // let serialized = GeoJson::from(feature_collection).to_string();
+        // Ok(serialized)
     }
 
     pub fn agent_memory(&self, agent_index: i32) -> PyResult<Vec<Py<PyAny>>> {

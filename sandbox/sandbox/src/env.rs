@@ -22,7 +22,7 @@ impl Env {
     pub fn new(path: String, agent_count: i32) -> Self {
         let (line_strings, targets, scalex, scaley, xmin, ymin) = utils::import_geometry(path);
         let mut agents = vec![];
-        for _ in [..agent_count].iter() {
+        for i in 0..agent_count {
             agents.push(Agent::new(targets.choose(&mut rand::thread_rng()).unwrap().clone(), line_strings.clone()));
         }
         Env {
@@ -81,6 +81,7 @@ impl Env {
         if utils::intersects(&step_ray, &self.line_strings.par_iter().collect()) {
             let state = self.agents[a as usize].last_state.iter().copied().collect();
             self.agents[a as usize].add_to_memory(&state, action, reward, true);
+            self.agents[a as usize].active = false;
             return (state, -3.0, true);
         }
         let prev_past_position_dist = self.agents[a as usize].past_position_distance;
@@ -114,7 +115,7 @@ impl Env {
             backtrack_penalty = backtrack_penalty + (1.0 - (self.agents[a as usize].past_position_bearing.abs() / 3.14)) / 4.0;
             if backtrack_penalty > 0.0 {
                 reward = reward + backtrack_penalty * -1.0;
-                println!("backtrack penalty {}", reward)
+                //println!("backtrack penalty {}", reward)
             }
         }
         if distance_to_target < 0.02 {
