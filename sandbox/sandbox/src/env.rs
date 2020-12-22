@@ -7,6 +7,10 @@ use geo::euclidean_distance::EuclideanDistance;
 use rand;
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
+use tch::{nn, Tensor};
+use tch::nn::{Optimizer, Adam};
+use tch::nn::OptimizerConfig;
+
 
 pub struct Env {
     pub line_strings: Vec<LineString<f64>>,
@@ -25,6 +29,7 @@ impl Env {
         for i in 0..agent_count {
             agents.push(Agent::new(targets.choose(&mut rand::thread_rng()).unwrap().clone(), line_strings.clone()));
         }
+
         Env {
             line_strings,
             targets,
@@ -34,6 +39,21 @@ impl Env {
             ymin,
             agents: agents,
         }
+    }
+    pub fn action_space(&self) -> usize {
+        self.agents.get(0).unwrap().action_space.len()
+    }
+
+    pub fn observation_space(&self) -> usize {
+        /*
+        relative_bearing_to_target,
+        distance_to_target,
+        can_see_target,
+        past_position_distance,
+        past_position_bearing,
+        ray
+        */
+        5 + self.agents.get(0).unwrap().ray_count as usize
     }
 
     pub fn get_line_strings_as_lines(&self) -> Vec<HashMap<&str, f64>> {
@@ -80,7 +100,7 @@ impl Env {
         let step_ray = Ray::new(direction_change, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false);
         if utils::intersects(&step_ray, &self.line_strings.par_iter().collect()) {
             let state = self.agents[a as usize].last_state.iter().copied().collect();
-            self.agents[a as usize].add_to_memory(&state, action, reward, true);
+            //self.agents[a as usize].add_to_memory(&state, action, reward, true);
             self.agents[a as usize].active = false;
             return (state, -3.0, true);
         }
@@ -125,7 +145,7 @@ impl Env {
         }
         self.agents[a as usize].prev_target_dist = distance_to_target;
         self.agents[a as usize].last_state = state.iter().copied().collect();
-        self.agents[a as usize].add_to_memory(&state, action, reward, false);
+        //self.agents[a as usize].add_to_memory(&state, action, reward, false);
         return (state, reward, !self.agents[a as usize].active);
     }
 

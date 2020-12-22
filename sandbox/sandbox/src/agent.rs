@@ -2,7 +2,6 @@ use geo::{Point, Rect, LineString};
 use geo::euclidean_distance::EuclideanDistance;
 use crate::utils;
 use crate::ray::Ray;
-use pyo3::prelude::*;
 use rand::Rng;
 use std::collections::HashMap;
 
@@ -25,7 +24,7 @@ pub struct Agent {
     pub past_position_bearing: f64,
     pub action_space: Vec<f64>,
     pub prev_state: Vec<f64>,
-    pub memory: Vec<Py<PyAny>>,
+    //pub memory: Vec<Py<PyAny>>,
     pub collected_targets: Vec<Point<f64>>,
     pub prev_target_dist: f64,
     pub last_state: Vec<f64>,
@@ -62,7 +61,7 @@ impl Agent {
                 10.0f64.to_radians(),
             ],
             prev_state: vec![],
-            memory: vec![],
+            //memory: vec![],
             prev_target_dist: 1.0,
             coordinates_path: vec![position],
             env_line_strings,
@@ -106,6 +105,7 @@ impl Agent {
         res
     }
 
+    /*
     pub fn add_to_memory(&mut self, new_state: &Vec<f64>, action: i32, reward: f64, done: bool) {
         if self.prev_state.len() > 0 {
             let gil = Python::acquire_gil();
@@ -120,7 +120,7 @@ impl Agent {
             self.memory.push(key_vals.to_object(py));
         }
         self.prev_state = new_state.clone();
-    }
+    }*/
 
     pub fn collect_target(&mut self, target: Point<f64>, n_targets: i32) {
         self.age = 1.0;

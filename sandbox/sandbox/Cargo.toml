@@ -8,15 +8,20 @@ edition = "2018"
 [lib]
 name = "sandbox"
 
+[[bin]]
+name = "bin"
+path = "bin/bin.rs"
+
 [dependencies]
 geo = "0.14.2"
 geojson = { version = "0.19.0", features=["geo-types"] }
 line_intersection = { path = "../line_intersection"}
 rand = "*"
 rayon = "*"
+tch = "*"
 
-[dependencies.pyo3]
-version = "0.12.1"
-[features]
-extension-module = ["pyo3/extension-module"]
-default = ["extension-module"]
+#[dependencies.pyo3]
+#version = "*"
+#[features]
+#extension-module = ["pyo3/extension-module"]
+#default = ["extension-module"]
