@@ -4,6 +4,9 @@
    See https://spinningup.openai.com/en/latest/algorithms/ddpg.html for a
    reference python implementation.
 */
+mod renderer;
+use sdl2::pixels::Color;
+
 use sandbox::env::Env;
 use tch::{
     kind::{FLOAT_CPU, DOUBLE_CPU, INT64_CPU},
@@ -15,6 +18,7 @@ use tch::{
 };
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
+use crate::renderer::Renderer;
 
 // The impact of the q value of the next state on the current state's q value.
 const GAMMA: f64 = 0.99;
@@ -32,7 +36,7 @@ const MAX_EPISODES: usize = 100_000;
 const EPISODE_LENGTH: usize = 1000;
 // The number of training iterations after one episode finishes.
 //const TRAINING_ITERATIONS: usize = 200;
-const TRAINING_ITERATIONS: usize = 1000;
+const TRAINING_ITERATIONS: usize = 200;
 
 // Ornstein-Uhlenbeck process parameters.
 const MU: f64 = 0.0;
@@ -337,6 +341,8 @@ impl Agent {
 pub fn main() {
     let mut rng: StdRng = SeedableRng::seed_from_u64(1);
     let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1);
+    let mut renderer = Renderer::new(env.scalex, env.scaley);
+    //renderer.init();
     println!("action space: {}", env.action_space());
     println!("observation space: {}", env.observation_space());
 
@@ -357,7 +363,10 @@ pub fn main() {
         TAU,
     );
 
-    for episode in 0..MAX_EPISODES {
+    'running: for episode in 0..MAX_EPISODES {
+        if renderer.quit() {
+            break 'running;
+        }
         let mut obs = Tensor::zeros(&[num_obs as _], FLOAT_CPU);
         env.reset(0);
         dbg!(&obs);
@@ -376,6 +385,11 @@ pub fn main() {
             //let actions: f64 = rng.gen_range(0.0, 4.0);
 
             let (state, reward, done) = env.step(action, 0);
+            renderer.clear();
+            renderer.render_line_strings(&env.line_strings.iter().collect(), Color::RGB(0, 255, 0), &env.agents.get(0).unwrap().position);
+            renderer.render_points(&env.targets, Color::RGB(255, 0, 255), &env.agents.get(0).unwrap().position);
+            renderer.render_rays(&env.agents.get(0).unwrap().rays, Color::RGB(0, 0, 255), &env.agents.get(0).unwrap().position);
+            renderer.present();
             total_reward += reward;
             let state_t = Tensor::of_slice(&state).totype(Float);
             //state_t;

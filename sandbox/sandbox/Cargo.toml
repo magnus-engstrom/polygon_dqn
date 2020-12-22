@@ -19,6 +19,7 @@ line_intersection = { path = "../line_intersection"}
 rand = "*"
 rayon = "*"
 tch = "*"
+sdl2 = { version = "0.34.3" }
 
 #[dependencies.pyo3]
 #version = "*"
