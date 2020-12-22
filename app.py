@@ -27,7 +27,8 @@ if __name__ == "__main__":
     ]
     random.seed(1)
     np.random.seed(1)
-    env = Env("sandbox/data/" + random.choice(polygons), 2)
+    n_agents = 2
+    env = Env("sandbox/data/" + random.choice(polygons), n_agents)
     renderer = Renderer(500)
     n_actions = len(env.action_space(0))
     model = Model(n_actions)

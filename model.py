@@ -15,7 +15,7 @@ class Model:
         random.seed(1)
         np.random.seed(1)
         self.total_memory = deque(maxlen=250000)
-        self.min_batch_samples = 5
+        self.min_batch_samples = 50
         self.training_started = False
         self.epsilon = 1
         self.epsilon_decay = 0.998
@@ -24,7 +24,7 @@ class Model:
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.997
-        self.name = "model_test_231"
+        self.name = "model_test_235"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0
@@ -67,23 +67,26 @@ class Model:
 
     def predict_action(self, state, no_exploration):
             if (no_exploration or random.uniform(0,1) > self.epsilon) and len(state) > 0 and random.uniform(0,1) > self.min_epsilon:
-                return np.argmax(self.model.predict(state.reshape(-1, len(state))))
+                state_dataset = tf.data.Dataset.from_tensor_slices(state.reshape(-1, len(state))).batch(1)
+                return np.argmax(self.model.predict(state_dataset))
             else:
                 return random.randint(0, self.n_actions-1)
         
     def __train(self):
         print("training on batch of size", self.batch_size)
         batch_losses = []
+        TAU = 1.0/2500.0
         for old_state, action, new_state, reward, done in random.sample(self.total_memory, self.batch_size):
             if done:
                 target = reward
             else:
-                target = reward + self.discount * np.max(self.target_model.predict(new_state))
-            target_vec = self.model.predict(old_state)[0]
+                #new_state_dataset = tf.data.Dataset.from_tensor_slices(new_state).batch(1)
+                target = reward + self.discount * np.max(self.target_model(new_state, training=False))
+            old_state_dataset = tf.data.Dataset.from_tensor_slices(old_state).batch(1)
+            target_vec = self.model.predict(old_state_dataset)[0]
             target_vec[action] = target
             loss = self.model.fit(old_state, target_vec.reshape(-1, self.n_actions), epochs=1, verbose=0, callbacks=[self.tensorboard_callback])
             batch_losses.append([loss.history['loss'], [old_state, action, new_state, reward, done]])
-            TAU = 1.0/2500.0
             for t, e in zip(self.target_model.trainable_variables, self.model.trainable_variables):
                         t.assign(t * (1 - TAU) + e * TAU)
         batch_losses = sorted(batch_losses, key=lambda x: x[0], reverse=True)

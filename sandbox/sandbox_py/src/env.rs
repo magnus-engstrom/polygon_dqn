@@ -79,7 +79,7 @@ impl Env {
         let mut points_path_raw = self.env.agents[a as usize].get_coordinates_path().clone();
         let mut points_path_final = vec![points_path_raw[0 as usize]];
         let mut features = vec![];
-        let mut smoothing_point_index = 10;
+        let mut smoothing_point_index = points_path_raw.len()-1;
         loop {
             let p1 = points_path_final[points_path_final.len()-1 as usize];
             let smoothing_point = points_path_raw[smoothing_point_index as usize];
@@ -101,7 +101,11 @@ impl Env {
                     if intersections.len() > 0 {
                         break;
                     }
-                }                
+                }   
+                if i < 10 {
+                    points_path_raw.drain(0..i);
+                    break;
+                }             
                 if intersections.len() < 1 {
                     if smoothing_point_index > 0 && smoothing_point_index < i {
                         println!("inserting smoothing point");
@@ -154,7 +158,7 @@ impl Env {
 
 
     pub fn agent_targets_count(&self, agent_index: i32) -> PyResult<i32> {
-        Ok(self.env.agents[agent_index as usize].collected_targets.len() as i32)
+        Ok(self.env.agents[agent_index as usize].collected_targets.len() as i32 - 1)
     }
 
     pub fn get_state(&mut self, agent_index: i32) -> Vec<f64> {
