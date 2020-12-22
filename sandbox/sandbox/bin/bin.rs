@@ -25,11 +25,14 @@ const REPLAY_BUFFER_CAPACITY: usize = 100_000;
 // The training batch size for each training iteration.
 const TRAINING_BATCH_SIZE: usize = 100;
 // The total number of episodes.
-const MAX_EPISODES: usize = 100;
+//const MAX_EPISODES: usize = 100;
+const MAX_EPISODES: usize = 100_000;
 // The maximum length of an episode.
-const EPISODE_LENGTH: usize = 200;
+//const EPISODE_LENGTH: usize = 200;
+const EPISODE_LENGTH: usize = 1000;
 // The number of training iterations after one episode finishes.
-const TRAINING_ITERATIONS: usize = 200;
+//const TRAINING_ITERATIONS: usize = 200;
+const TRAINING_ITERATIONS: usize = 1000;
 
 // Ornstein-Uhlenbeck process parameters.
 const MU: f64 = 0.0;
@@ -338,7 +341,8 @@ pub fn main() {
     println!("observation space: {}", env.observation_space());
 
     let num_obs = env.observation_space() as usize;
-    let num_actions = env.action_space() as usize;
+    //let num_actions = env.action_space() as usize;
+    let num_actions = 1 as usize;
 
     let actor = Actor::new(num_obs, num_actions, ACTOR_LEARNING_RATE);
     let critic = Critic::new(num_obs, num_actions, CRITIC_LEARNING_RATE);
@@ -362,7 +366,7 @@ pub fn main() {
 
             let t = agent.actions(&obs);
             dbg!(&t);
-            let mut actions = 2.0 * f64::from(t.get(2));
+            let mut actions = 2.0 * f64::from(t);
             println!("actions raw: {:?}", &actions);
             actions = actions.max(-2.0).min(2.0);
             actions = actions + 2.0;
