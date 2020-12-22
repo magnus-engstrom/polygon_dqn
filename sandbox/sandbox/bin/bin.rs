@@ -30,7 +30,7 @@ const REPLAY_BUFFER_CAPACITY: usize = 100_000;
 const TRAINING_BATCH_SIZE: usize = 100;
 // The total number of episodes.
 //const MAX_EPISODES: usize = 100;
-const MAX_EPISODES: usize = 100_000;
+const MAX_EPISODES: usize = 500_000;
 // The maximum length of an episode.
 //const EPISODE_LENGTH: usize = 200;
 const EPISODE_LENGTH: usize = 1000;
@@ -369,18 +369,18 @@ pub fn main() {
         }
         let mut obs = Tensor::zeros(&[num_obs as _], FLOAT_CPU);
         env.reset(0);
-        dbg!(&obs);
+        //dbg!(&obs);
         let mut total_reward = 0.0;
         for _ in 0..EPISODE_LENGTH {
 
             let t = agent.actions(&obs);
-            dbg!(&t);
+            //dbg!(&t);
             let mut actions = 2.0 * f64::from(t);
-            println!("actions raw: {:?}", &actions);
+            //println!("actions raw: {:?}", &actions);
             actions = actions.max(-2.0).min(2.0);
             actions = actions + 2.0;
             let action = actions.round() as i32;
-            println!("action: {}", &action);
+            //println!("action: {}", &action);
 
             //let actions: f64 = rng.gen_range(0.0, 4.0);
 
