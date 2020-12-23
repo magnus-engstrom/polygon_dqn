@@ -38,7 +38,7 @@ impl Agent {
             speed: 0.0045,
             age: 1.0,
             direction: rand::thread_rng().gen_range(-3.14, 3.14),
-            ray_count: 49.0,
+            ray_count: 15.0,
             fov: 0.8,
             visibility: 0.6,
             max_age: 400.0,

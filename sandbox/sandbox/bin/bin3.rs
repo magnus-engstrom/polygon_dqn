@@ -21,13 +21,13 @@ use rand::rngs::StdRng;
 use crate::renderer::Renderer;
 
 // The impact of the q value of the next state on the current state's q value.
-const GAMMA: f64 = 0.99;
+const GAMMA: f64 = 0.997;
 // The weight for updating the target networks.
 const TAU: f64 = 0.005;
 // The capacity of the replay buffer used for sampling training data.
-const REPLAY_BUFFER_CAPACITY: usize = 100_000;
+const REPLAY_BUFFER_CAPACITY: usize = 250_000;
 // The training batch size for each training iteration.
-const TRAINING_BATCH_SIZE: usize = 100;
+const TRAINING_BATCH_SIZE: usize = 64;
 // The total number of episodes.
 //const MAX_EPISODES: usize = 100;
 const MAX_EPISODES: usize = 500_000;
@@ -42,6 +42,10 @@ const TRAINING_ITERATIONS: usize = 200;
 const MU: f64 = 0.0;
 const THETA: f64 = 0.15;
 const SIGMA: f64 = 0.1;
+
+const EPSILON: f64 = 1.0;
+const MIN_EPSILON: f64 = 0.1;
+const DECAY: f64 = 0.9999;
 
 const ACTOR_LEARNING_RATE: f64 = 1e-4;
 const CRITIC_LEARNING_RATE: f64 = 1e-3;
@@ -69,6 +73,46 @@ impl OuNoise {
             + self.sigma * Tensor::randn(&self.state.size(), FLOAT_CPU);
         self.state += dx;
         &self.state
+    }
+}
+
+struct MyNoise {
+    epsilon: f64,
+    decay: f64,
+    num_actions: usize,
+    rng: StdRng,
+    state: Tensor,
+}
+
+impl MyNoise {
+    fn new(epsilon: f64, decay: f64, num_actions: usize) -> Self {
+        let state = Tensor::zeros(&[num_actions as _], FLOAT_CPU);
+        let mut rng: StdRng = SeedableRng::seed_from_u64(1);
+        Self {
+            epsilon,
+            decay,
+            num_actions,
+            rng,
+            state,
+        }
+    }
+
+    fn sample(&mut self) -> &Tensor {
+        self.state = Tensor::zeros(&[self.num_actions as _], FLOAT_CPU);
+        if (self.rng.gen_range(0.0, 1.0) < self.epsilon) {
+            let action = self.rng.gen_range(0, 5);
+            //println!("random action {}", &action);
+            let mut zero_vec = vec![0.0; self.num_actions];
+            zero_vec[action] = 2.0;
+            self.state = Tensor::of_slice(&zero_vec).totype(Float);
+        }
+        if self.epsilon > MIN_EPSILON {
+            self.epsilon = self.epsilon * self.decay;
+        } else {
+            self.epsilon = MIN_EPSILON;
+        }
+        //dbg!(&self.state);
+        return &self.state
     }
 }
 
@@ -151,13 +195,13 @@ impl Actor {
         let p = &var_store.root();
         Self {
             network: nn::seq()
-                .add(nn::linear(p / "al1", num_obs as _, 400, Default::default()))
+                .add(nn::linear(p / "al1", num_obs as _, 512, Default::default()))
                 .add_fn(|xs| xs.relu())
-                .add(nn::linear(p / "al2", 400, 300, Default::default()))
+                .add(nn::linear(p / "al2", 512, 512, Default::default()))
                 .add_fn(|xs| xs.relu())
                 .add(nn::linear(
                     p / "al3",
-                    300,
+                    512,
                     num_actions as _,
                     Default::default(),
                 ))
@@ -204,13 +248,13 @@ impl Critic {
                 .add(nn::linear(
                     p / "cl1",
                     (num_obs + num_actions) as _,
-                    400,
+                    512,
                     Default::default(),
                 ))
                 .add_fn(|xs| xs.relu())
-                .add(nn::linear(p / "cl2", 400, 300, Default::default()))
+                .add(nn::linear(p / "cl2", 512, 512, Default::default()))
                 .add_fn(|xs| xs.relu())
-                .add(nn::linear(p / "cl3", 300, 1, Default::default())),
+                .add(nn::linear(p / "cl3", 512, 1, Default::default())),
             device: p.device(),
             var_store,
             num_obs,
@@ -248,6 +292,7 @@ struct Agent {
     replay_buffer: ReplayBuffer,
 
     ou_noise: OuNoise,
+    my_noise: MyNoise,
 
     train: bool,
 
@@ -260,6 +305,7 @@ impl Agent {
         actor: Actor,
         critic: Critic,
         ou_noise: OuNoise,
+        my_noise: MyNoise,
         replay_buffer_capacity: usize,
         train: bool,
         gamma: f64,
@@ -276,6 +322,7 @@ impl Agent {
             critic_target,
             replay_buffer,
             ou_noise,
+            my_noise,
             train,
             gamma,
             tau,
@@ -285,8 +332,13 @@ impl Agent {
     fn actions(&mut self, obs: &Tensor) -> Tensor {
         let mut actions = tch::no_grad(|| self.actor.forward(obs));
         if self.train {
-            actions += self.ou_noise.sample();
+            actions = actions.clamp(-1.0, 0.9999999);
+            actions += self.my_noise.sample();
+            //actions *= self.my_noise.sample();
+            //actions.copy_(self.my_noise.sample());
+            actions = actions.clamp(-1.0, 1.0);
         }
+        //dbg!(&actions);
         actions
     }
 
@@ -353,16 +405,19 @@ pub fn main() {
     let actor = Actor::new(num_obs, num_actions, ACTOR_LEARNING_RATE);
     let critic = Critic::new(num_obs, num_actions, CRITIC_LEARNING_RATE);
     let ou_noise = OuNoise::new(MU, THETA, SIGMA, num_actions);
+    let my_noise = MyNoise::new(EPSILON, DECAY, num_actions);
     let mut agent = Agent::new(
         actor,
         critic,
         ou_noise,
+        my_noise,
         REPLAY_BUFFER_CAPACITY,
         true,
         GAMMA,
         TAU,
     );
-
+    let mut total_step = 0;
+    let mut last_step = 0;
     'running: for episode in 0..MAX_EPISODES {
         if renderer.quit() {
             break 'running;
@@ -383,8 +438,9 @@ pub fn main() {
             //println!("action: {}", &action);
             //let actions: f64 = rng.gen_range(0.0, 4.0);
 
-            let action = i32::from(&actions.argmax(-1, true));
-
+            let action = i32::from(&actions.argmax(-1, false));
+            //println!("actual action {}", &action);
+            //dbg!(&actions);
             let (state, reward, done) = env.step(action, 0);
             renderer.clear();
             renderer.render_line_strings(&env.line_strings.iter().collect(), Color::RGB(0, 255, 0), &env.agents.get(0).unwrap().position);
@@ -396,15 +452,15 @@ pub fn main() {
             //state_t;
             //dbg!(&state_t);
             agent.remember(&obs, &actions.into(), &reward.into(), &state_t);
-
+            total_step += 1;
             if done {
                 break;
             }
             obs = state_t;
         }
 
-        println!("episode {} with total reward of {}", episode, total_reward);
-
+        println!("episode {}(steps {}, targets {}), total step {}, reward {}, epsilon {}", episode, total_step - last_step, env.agents.get(0).unwrap().collected_targets.len() - 1, total_step, total_reward, agent.my_noise.epsilon);
+        last_step = total_step;
         for _ in 0..TRAINING_ITERATIONS {
             agent.train(TRAINING_BATCH_SIZE);
         }

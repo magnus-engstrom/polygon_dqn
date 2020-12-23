@@ -12,6 +12,14 @@ name = "sandbox"
 name = "bin"
 path = "bin/bin.rs"
 
+[[bin]]
+name = "bin2"
+path = "bin/bin2.rs"
+
+[[bin]]
+name = "bin3"
+path = "bin/bin3.rs"
+
 [dependencies]
 geo = "0.14.2"
 geojson = { version = "0.19.0", features=["geo-types"] }
