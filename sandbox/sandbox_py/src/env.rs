@@ -20,8 +20,8 @@ pub(crate) struct Env {
 #[pymethods]
 impl Env {
     #[new]
-    fn new(path: String, agent_count: i32) -> Self {
-        let env = REnv::new(path, agent_count);
+    fn new(path: String, agent_count: i32, max_steps: i32) -> Self {
+        let env = REnv::new(path, agent_count, max_steps);
         Env {
             env
         }

@@ -2,14 +2,15 @@ from sandbox_py import Env
 import numpy as np
 import tensorflow as tf
 
-n_paths = 20
-env_file = "gavle.json"
-env = Env("sandbox/data/" + env_file, n_paths)
+n_paths = 5
+max_steps = 10000
+env_file = "exp1.json"
+env = Env("sandbox/data/" + env_file, n_paths, max_steps)
 
-model_name = "model_test_233"
+model_name = "model_4"
 model = tf.keras.models.load_model("models/" + model_name + "_best")
 
-max_steps = 2000
+
 
 old_state = []
 action = 0

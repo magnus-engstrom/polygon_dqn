@@ -9,6 +9,7 @@ from collections import deque
 import datetime as dt
 
 start_time = None
+epoch_time = dt.datetime.today().timestamp()
 i = 0
 
 def handle_input():
@@ -22,13 +23,14 @@ def handle_input():
 
 if __name__ == "__main__":
     polygons = [
-        #"simple.json",
-        "gavle.json"
+        #"polygons3.json",
+        "gavle.json",
+        #"simple.json"
     ]
     random.seed(1)
     np.random.seed(1)
     n_agents = 1
-    env = Env("sandbox/data/" + random.choice(polygons), n_agents)
+    env = Env("sandbox/data/" + random.choice(polygons), n_agents, 250)
     renderer = Renderer(500)
     n_actions = len(env.action_space(0))
     model = Model(n_actions)
@@ -46,7 +48,7 @@ if __name__ == "__main__":
         state[0] /= 3.14 # scale target bearing to between -1 to +1
         target_bearing, target_distance, can_see_target, *_ = state
         if len(state) > 1: old_state = state
-        if end or (render and env.agent_targets_count(agent_id) > 10.0):
+        if end or (render and env.agent_targets_count(agent_id) > 10.0) or not env.agent_active(agent_id):
             if not render:
                 tagets_found.append(env.agent_targets_count(agent_id))
                 model.store_memory_and_train(
@@ -57,12 +59,13 @@ if __name__ == "__main__":
                             np.array(d["new_state"]).reshape(-1, len(d["new_state"])),
                             d["reward"],
                             d["done"],
-                        ] for d in [dict(m) for m in env.agent_memory(agent_id)]
+                        ] for d in [dict(m) for m in env.agent_memory(agent_id)[2:]]
                     ],
                     env.agent_targets_count(agent_id),
-                    sum(tagets_found) / len(tagets_found)
+                    sum(tagets_found) / len(tagets_found),
+                    (dt.datetime.today().timestamp() - epoch_time) / 60
                 )
-            if render: print(env.agent_coordinates_path(agent_id))
+            # if render: print(env.agent_coordinates_path(agent_id))
             env.reset(agent_id)
             old_state = []
             agg_reward = 0
@@ -80,6 +83,8 @@ if __name__ == "__main__":
                 can_see_target,
                 env.agent_past_position(agent_id),
                 env.agent_collected_targets(agent_id), 
+                sum(tagets_found) / len(tagets_found),
+                env.agent_age(agent_id),
             )
         
         if start_time is not None:

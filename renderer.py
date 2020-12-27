@@ -13,7 +13,7 @@ class Renderer:
         self.prepare_assets_3D()
         pygame.font.init() # you have to call this at the start, 
                    # if you want to use this module.
-        self.font_display = pygame.font.SysFont('Arial', 50)
+        self.font_display = pygame.font.SysFont('Arial', 14)
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
@@ -42,7 +42,11 @@ class Renderer:
             wall_height = screen_height / z * 0.015
             wall_height = min(wall_height, screen_height)
             top = (screen_height / 2) - (wall_height / 2)
-            shading = color_max * (1 - z/self.agent_visibility)
+            shading = color_max * (1 - z/0.6)
+            if shading > 255:
+                shading = 250
+            if shading < 0:
+                shading = 0
             rect = [i + offset, top, width + 1, wall_height]
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
             offset += width - 1
@@ -87,17 +91,23 @@ class Renderer:
             pygame.draw.circle(self.display, (50, 50, 0), (ct[0] * self.scale * resize - ax + self.scale / 2, ct[1] * self.scale * resize - ay + self.scale / 2), 5)
         
 
-    def draw_reward(self, reward, target_bearing):
-        textsurface = self.font_display.render(str(reward), False, (255, 255, 255))
-        self.display.blit(textsurface,(650,350))
-        textsurface = self.font_display.render(str(target_bearing), False, (150, 150, 150))
-        self.display.blit(textsurface,(650,460))
+    def draw_reward(self, reward, target_bearing, mean_targets_found, age):
+        rect = [500, 300, 500, 40]
+        pygame.draw.rect(self.display, (0, 0, 0), rect)
+        textsurface = self.font_display.render("Reward: " + str(reward), False, (200, 200, 200))
+        self.display.blit(textsurface,(500,305))
+        textsurface = self.font_display.render("Bearing: " + str(target_bearing), False, (150, 150, 150))
+        self.display.blit(textsurface,(630,305))
+        textsurface = self.font_display.render("Age: " + str(age), False, (150, 150, 150))
+        self.display.blit(textsurface,(750,305))
+        textsurface = self.font_display.render("Targets (mean): " + str(mean_targets_found), False, (150, 150, 150))
+        self.display.blit(textsurface,(850,305))
 
-    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, closest_target, can_see_target, past_position, collected_targets):
+    def draw(self, env_lines, rays, targets, target_bearing, target_distance, reward, closest_target, can_see_target, past_position, collected_targets, mean_targets_found, age):
         self.display.fill((10, 10, 10))
         self.draw_2D(env_lines, rays, targets, closest_target, past_position, collected_targets)
         self.draw_3D(rays, target_bearing, target_distance, can_see_target)
-        self.draw_reward(reward, target_bearing)
+        self.draw_reward(round(reward, 3), round(target_bearing, 3), round(mean_targets_found, 3), age)
         pygame.display.update()
         #pygame.display.flip()
         self.clock.tick(22)
