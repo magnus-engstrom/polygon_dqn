@@ -6,7 +6,8 @@
 */
 mod renderer;
 use sdl2::pixels::Color;
-
+use csv::Writer;
+use serde::Serialize;
 use sandbox::env::Env;
 use tch::{
     kind::{FLOAT_CPU, DOUBLE_CPU, INT64_CPU},
@@ -27,6 +28,7 @@ const TAU: f64 = 0.005;
 // The capacity of the replay buffer used for sampling training data.
 const REPLAY_BUFFER_CAPACITY: usize = 250_000;
 // The training batch size for each training iteration.
+//const TRAINING_BATCH_SIZE: usize = 100;
 const TRAINING_BATCH_SIZE: usize = 64;
 // The total number of episodes.
 //const MAX_EPISODES: usize = 100;
@@ -363,7 +365,7 @@ impl Agent {
 
         let diff = q_target - q;
         let critic_loss = (&diff * &diff).mean(Float);
-
+        //dbg!(&critic_loss);
         self.critic.opt.zero_grad();
         critic_loss.backward();
         self.critic.opt.step();
@@ -372,7 +374,7 @@ impl Agent {
             .critic
             .forward(&states, &self.actor.forward(&states))
             .mean(Float);
-
+        //dbg!(&actor_loss);
         self.actor.opt.zero_grad();
         actor_loss.backward();
         self.actor.opt.step();
@@ -390,8 +392,12 @@ impl Agent {
     }
 }
 
+
+
 pub fn main() {
     let mut rng: StdRng = SeedableRng::seed_from_u64(1);
+    let mut wtr = Writer::from_path("stats.csv").unwrap();
+
     let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1);
     let mut renderer = Renderer::new(env.scalex, env.scaley);
     renderer.init();
@@ -416,16 +422,18 @@ pub fn main() {
         GAMMA,
         TAU,
     );
-    let mut total_step = 0;
+    let mut total_steps = 0;
     let mut last_step = 0;
-    'running: for episode in 0..MAX_EPISODES {
+    let mut total_targets: i32 = 0;
+    let mut total_rewards: f64 = 0.0;
+    'running: for episode in 0..MAX_EPISODES as i32 {
         if renderer.quit() {
             break 'running;
         }
         let mut obs = Tensor::zeros(&[num_obs as _], FLOAT_CPU);
         env.reset(0);
         //dbg!(&obs);
-        let mut total_reward = 0.0;
+        let mut episode_rewards = 0.0;
         for _ in 0..EPISODE_LENGTH {
 
             let actions = agent.actions(&obs);
@@ -447,22 +455,62 @@ pub fn main() {
             renderer.render_points(&env.targets, Color::RGB(255, 0, 255), &env.agents.get(0).unwrap().position);
             renderer.render_rays(&env.agents.get(0).unwrap().rays, Color::RGB(0, 0, 255), &env.agents.get(0).unwrap().position);
             renderer.present();
-            total_reward += reward;
+            episode_rewards += reward;
             let state_t = Tensor::of_slice(&state).totype(Float);
             //state_t;
             //dbg!(&state_t);
             agent.remember(&obs, &actions.into(), &reward.into(), &state_t);
-            total_step += 1;
+            total_steps += 1;
             if done {
                 break;
             }
             obs = state_t;
         }
-
-        println!("episode {}(steps {}, targets {}), total step {}, reward {}, epsilon {}", episode, total_step - last_step, env.agents.get(0).unwrap().collected_targets.len() - 1, total_step, total_reward, agent.my_noise.epsilon);
-        last_step = total_step;
+        let episode_targets = (env.agents.get(0).unwrap().collected_targets.len() - 1) as i32;
+        let episode_steps = total_steps - last_step;
+        total_targets += episode_targets;
+        total_rewards += episode_rewards;
+        let targets_per_step = match total_targets {
+            0 => 0f64,
+            x => x as f64 / total_steps as f64
+        };
+        let targets_per_episode = match total_targets {
+            0 => 0f64,
+            x => x as f64 / episode as f64
+        };
+        //println!("episode {}(steps {}, targets {}), total step {}, total targets {}, target/step {}, reward {}, epsilon {}", episode, total_step - last_step, env.agents.get(0).unwrap().collected_targets.len() - 1, total_step, found_targets, found_targets/total_step as f64, total_reward, agent.my_noise.epsilon);
+        let record = StatsRow{
+            episode,
+            episode_steps,
+            episode_targets,
+            episode_rewards,
+            total_steps,
+            total_targets,
+            targets_per_step,
+            targets_per_episode,
+            rewards_per_step: total_rewards / total_steps as f64,
+            epsilon: agent.my_noise.epsilon,
+        };
+        dbg!(&record);
+        wtr.serialize(record).unwrap();
+        wtr.flush().unwrap();
+        last_step = total_steps;
         for _ in 0..TRAINING_ITERATIONS {
             agent.train(TRAINING_BATCH_SIZE);
         }
     }
+}
+
+#[derive(Serialize, Debug)]
+struct StatsRow {
+    episode: i32,
+    episode_steps: i32,
+    episode_targets: i32,
+    episode_rewards: f64,
+    total_steps: i32,
+    total_targets: i32,
+    targets_per_step: f64,
+    targets_per_episode: f64,
+    rewards_per_step: f64,
+    epsilon: f64,
 }

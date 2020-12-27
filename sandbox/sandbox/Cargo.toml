@@ -28,7 +28,8 @@ rand = "*"
 rayon = "*"
 tch = "*"
 sdl2 = { version = "0.34.3" }
-
+csv = "*"
+serde = { version = "*", features=["derive"]}
 #[dependencies.pyo3]
 #version = "*"
 #[features]
