@@ -30,6 +30,7 @@ tch = "*"
 sdl2 = { version = "0.34.3" }
 csv = "*"
 serde = { version = "*", features=["derive"]}
+moving_avg = "*"
 #[dependencies.pyo3]
 #version = "*"
 #[features]

@@ -20,6 +20,7 @@ use tch::{
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 use crate::renderer::Renderer;
+use moving_avg::MovingAverage;
 
 // The impact of the q value of the next state on the current state's q value.
 const GAMMA: f64 = 0.997;
@@ -38,7 +39,7 @@ const MAX_EPISODES: usize = 500_000;
 const EPISODE_LENGTH: usize = 1000;
 // The number of training iterations after one episode finishes.
 //const TRAINING_ITERATIONS: usize = 200;
-const TRAINING_ITERATIONS: usize = 200;
+const TRAINING_ITERATIONS: usize = 1;
 
 // Ornstein-Uhlenbeck process parameters.
 const MU: f64 = 0.0;
@@ -47,7 +48,7 @@ const SIGMA: f64 = 0.1;
 
 const EPSILON: f64 = 1.0;
 const MIN_EPSILON: f64 = 0.1;
-const DECAY: f64 = 0.9999;
+const DECAY: f64 = 0.99999;
 
 const ACTOR_LEARNING_RATE: f64 = 1e-4;
 const CRITIC_LEARNING_RATE: f64 = 1e-3;
@@ -396,7 +397,7 @@ impl Agent {
 
 pub fn main() {
     let mut rng: StdRng = SeedableRng::seed_from_u64(1);
-    let mut wtr = Writer::from_path("stats.csv").unwrap();
+    let mut wtr = Writer::from_path("stats1.csv").unwrap();
 
     let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1);
     let mut renderer = Renderer::new(env.scalex, env.scaley);
@@ -426,6 +427,8 @@ pub fn main() {
     let mut last_step = 0;
     let mut total_targets: i32 = 0;
     let mut total_rewards: f64 = 0.0;
+    let mut target_avg_20 = MovingAverage::new(20);
+    let mut target_avg_100 = MovingAverage::new(100);
     'running: for episode in 0..MAX_EPISODES as i32 {
         if renderer.quit() {
             break 'running;
@@ -478,6 +481,8 @@ pub fn main() {
             0 => 0f64,
             x => x as f64 / episode as f64
         };
+
+
         //println!("episode {}(steps {}, targets {}), total step {}, total targets {}, target/step {}, reward {}, epsilon {}", episode, total_step - last_step, env.agents.get(0).unwrap().collected_targets.len() - 1, total_step, found_targets, found_targets/total_step as f64, total_reward, agent.my_noise.epsilon);
         let record = StatsRow{
             episode,
@@ -489,6 +494,8 @@ pub fn main() {
             targets_per_step,
             targets_per_episode,
             rewards_per_step: total_rewards / total_steps as f64,
+            target_avg_20: target_avg_20.feed(episode_targets as f64),
+            target_avg_100: target_avg_100.feed(episode_targets as f64),
             epsilon: agent.my_noise.epsilon,
         };
         dbg!(&record);
@@ -512,5 +519,7 @@ struct StatsRow {
     targets_per_step: f64,
     targets_per_episode: f64,
     rewards_per_step: f64,
+    target_avg_20: f64,
+    target_avg_100: f64,
     epsilon: f64,
 }

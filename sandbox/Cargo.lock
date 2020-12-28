@@ -587,6 +587,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "moving_avg"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5f94f2ad817676ed7698736c8adb4e3dcdd4ea86a16486d63f46bf755dafffb"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "ndarray"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -907,6 +916,7 @@ dependencies = [
  "geo",
  "geojson",
  "line_intersection",
+ "moving_avg",
  "rand",
  "rayon",
  "sdl2",
