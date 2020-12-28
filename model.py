@@ -24,7 +24,7 @@ class Model:
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.995 #0.997
-        self.name = "model_27"
+        self.name = "model_36"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0
@@ -50,6 +50,9 @@ class Model:
                 minutes_since_start=minutes_since_start
             )
             self.__train()
+            if len(episode_memory) > self.batch_size * 3:
+                print("double training")
+                self.__train()
             if self.epsilon > self.min_epsilon:
                 self.epsilon *= self.epsilon_decay
             if self.mean_targets_found <= mean_targets_found:
@@ -58,12 +61,12 @@ class Model:
             else:
                 if self.epsilon < 0.7:
                     self.epsilon *= 1.002
-                    print("increase epsilon")
+                    print("increasing epsilon, lowering learning rate")
+                    if self.learning_rate > self.min_learning_rate:
+                        self.learning_rate *= 0.9995
+                        K.set_value(self.model.optimizer.learning_rate, self.learning_rate)
                     #self.__soft_updae(tf.keras.models.load_model("models/" + self.name + "_best"), 1.0/100.0)
                 self.mean_targets_found = (mean_targets_found + self.mean_targets_found) / 2.0
-            if self.learning_rate > self.min_learning_rate:
-                self.learning_rate *= 0.9995
-                K.set_value(self.model.optimizer.learning_rate, self.learning_rate)
             if self.max_mean_targets_found < self.mean_targets_found:
                 self.model.save("models/" + self.name + "_best")
                 self.max_mean_targets_found = self.mean_targets_found

@@ -38,7 +38,7 @@ class Renderer:
         self.display.blit(self.assets["sky"], [500, 0, 500, 150])
         self.display.blit(self.assets["floor"], [500, 150, 500, 150])
         for i, ray in enumerate(rays):
-            z = ray["length"] * math.cos(ray["angle"])
+            z = ray["length"] * math.cos(ray["angle_adj"])
             wall_height = screen_height / z * 0.015
             wall_height = min(wall_height, screen_height)
             top = (screen_height / 2) - (wall_height / 2)
@@ -51,12 +51,12 @@ class Renderer:
             pygame.draw.rect(self.display, (shading, shading, shading), rect)
             offset += width - 1
 
-        if target_bearing >= rays[0]["angle"] and target_bearing <= rays[-1]["angle"] and can_see_target > 0:
+        if target_bearing >= rays[0]["angle_adj"] and target_bearing <= rays[-1]["angle_adj"] and can_see_target > 0:
             z = target_distance * math.cos(target_bearing)
             wall_height = screen_height / z * 0.015
             wall_height = min(wall_height, screen_height)
             top = (screen_height / 2) - (wall_height / 2)
-            target_x = int((0.5 - (target_bearing / abs(rays[0]["angle"] - rays[-1]["angle"]))) * screen_width)
+            target_x = int((0.5 - (target_bearing / abs(rays[0]["angle_adj"] - rays[-1]["angle_adj"]))) * screen_width)
             shading = color_max * (1 - z/self.agent_visibility)
             for j in range(int((width*2)/z*0.1)):
                 if int(target_x/width)+j < len(rays) and rays[int(target_x/width)+j]["length"] > target_distance:

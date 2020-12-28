@@ -78,8 +78,10 @@ impl Env {
         let direction_change = self.agents[a as usize].action_space.get(action as usize).unwrap().clone();
         if direction_change.abs() < 3.0f64.to_radians() {
             full_move = true
+        } else {
+            reward = reward - 0.08;
         }
-        let step_ray = Ray::new(direction_change, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false);
+        let step_ray = Ray::new(direction_change, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
         if utils::intersects(&step_ray, &self.line_strings.par_iter().collect()) {
             let state = self.agents[a as usize].last_state.iter().copied().collect();
             reward = -7.0;
@@ -122,7 +124,7 @@ impl Env {
         // }
  
         for i in 0..self.agents[a as usize].action_space.len() {
-            let pr = Ray::new(self.agents[a as usize].action_space.get(i).unwrap().clone(), self.agents[a as usize].speed*2.0, self.agents[a as usize].direction, self.agents[a as usize].position, false);
+            let pr = Ray::new(self.agents[a as usize].action_space.get(i).unwrap().clone(), self.agents[a as usize].speed*2.0, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
             if utils::intersects(&pr, &self.line_strings.par_iter().collect()) {
                 reward = reward - 0.5;
                 break;
@@ -131,7 +133,7 @@ impl Env {
         if !target_in_sight && prev_past_position_dist - self.agents[a as usize].past_position_distance > 0.0 {
             //let mut backtrack_penalty =  0.0; //(1.0 - (distance_to_target / self.agents[a as usize].prev_target_dist));
             let backtrack_penalty = self.agents[a as usize].past_position_bearing.abs() / 3.14;
-            reward = reward - backtrack_penalty / 5.0;
+            reward = reward - backtrack_penalty / 5.0; // 5.0
         }
         // // reward = reward - self.agents[a as usize].age / self.agents[a as usize].max_age;
         if distance_to_target < 0.04 {
@@ -152,7 +154,7 @@ impl Env {
     pub fn get_state(&mut self, a: i32) -> (Vec<f64>, bool) {
         let mut state = vec![];
         let mut can_see_target = false;
-        let step_ray = Ray::new(0.0, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false);
+        let step_ray = Ray::new(0.0, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
         let mut possible_targets = vec![];
         for target in self.targets.iter() {
             if !self.agents[a as usize].collected_targets.iter().any(|&t| t==target.clone()) {

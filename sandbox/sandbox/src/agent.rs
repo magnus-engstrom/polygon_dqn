@@ -37,11 +37,11 @@ pub struct Agent {
 impl Agent {
     pub(crate) fn new(position: Point<f64>, env_line_strings: Vec<LineString<f64>>, max_age: i32) -> Self {
         Agent {
-            speed: 0.0055, // 0.0045
+            speed: 0.006, // 0.0045
             age: 1.0,
             direction: rand::thread_rng().gen_range(-3.14, 3.14),
             ray_count: 39.0,
-            fov: 0.8,
+            fov: 120.0f64.to_radians(),
             visibility: 0.6,
             max_age: max_age as f64,
             position: position,
@@ -50,16 +50,16 @@ impl Agent {
             collected_targets: vec![position],
             closest_target: Point::new(0.0,0.0),
             active: true,
-            position_ticker: 50, // 50
+            position_ticker: 70, // 50
             past_positions: vec![position],
             past_position_distance: 0.0,
             past_position_bearing: 0.0,
             last_state: vec![],
             action_space: vec![
                 -10.0f64.to_radians(),
-                -3.0f64.to_radians(), // 1
+                -1.0f64.to_radians(), // 1
                 0.0f64.to_radians(),
-                3.0f64.to_radians(), // 1
+                1.0f64.to_radians(), // 1
                 10.0f64.to_radians(),
             ],
             prev_state: vec![],
@@ -98,6 +98,7 @@ impl Agent {
                     ("max_length", ray.max_length),
                     ("angle", ray.angle),
                     ("in_fov", ray.in_fov as i32 as f64),
+                    ("angle_adj", ray.angle_adj),
                 ]
                     .iter()
                     .cloned()
@@ -136,9 +137,19 @@ impl Agent {
 
     pub fn step(&mut self, action: usize, full_move: bool) {
         let mut step_size = self.speed;
+        //let direction_change = 0.0;
         let direction_change = self.action_space.get(action as usize).unwrap(); 
+        self.position_ticker = self.position_ticker - 1;
         if !full_move {
-            step_size = self.speed / 2.0;
+            step_size = self.speed / 3.0;
+        } else {
+            if self.position_ticker <= 0 {
+                self.position_ticker = 70; // 50
+                self.past_positions.push(self.position);
+            }
+            if self.past_positions.len() > 3 {
+                self.past_positions = self.past_positions.drain(self.past_positions.len()-3..).collect();
+            }
         }
         if self.age > self.max_age {
             self.active = false;
@@ -149,14 +160,6 @@ impl Agent {
         }
         if self.direction < -3.14 {
             self.direction = self.direction + 6.28;
-        }
-        self.position_ticker = self.position_ticker - 1;
-        if self.position_ticker <= 0 {
-            self.position_ticker = 70; // 50
-            self.past_positions.push(self.position);
-        }
-        if self.past_positions.len() > 3 {
-            self.past_positions = self.past_positions.drain(self.past_positions.len()-3..).collect();
         }
         let closest_past_position = utils::closest_of(self.past_positions.iter(), self.position).unwrap();
         let new_position = Point::new(
