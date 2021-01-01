@@ -37,6 +37,9 @@ if __name__ == "__main__":
     old_state = []
     render = False
     tagets_found = deque(maxlen=50)
+    total_reward = 0
+    age_end = 0
+    wall_end = 0
     while True:
         agent_id = 0
         keys = handle_input()
@@ -45,11 +48,16 @@ if __name__ == "__main__":
         if pygame.K_r in keys: render = True
         action = model.predict_action(np.array(old_state), render)
         (state, reward, end) = env.step(action, agent_id)
+        total_reward += reward
         state[0] /= 3.14 # scale target bearing to between -1 to +1
         target_bearing, target_distance, can_see_target, *_ = state
         if len(state) > 1: old_state = state
         if end or (render and env.agent_targets_count(agent_id) > 10.0) or not env.agent_active(agent_id):
             if not render:
+                if not env.agent_active(agent_id) and not end:
+                    age_end += 1
+                else:
+                    wall_end += 1
                 tagets_found.append(env.agent_targets_count(agent_id))
                 model.store_memory_and_train(
                     [
@@ -63,13 +71,17 @@ if __name__ == "__main__":
                     ],
                     env.agent_targets_count(agent_id),
                     sum(tagets_found) / len(tagets_found),
-                    (dt.datetime.today().timestamp() - epoch_time) / 60
+                    (dt.datetime.today().timestamp() - epoch_time) / 60,
+                    total_reward,
+                    wall_end,
+                    age_end
                 )
             # if render: print(env.agent_coordinates_path(agent_id))
-            env.reset(agent_id)
+            env.reset(agent_id, model.epsilon+model.epsilon)
             old_state = []
             agg_reward = 0
             render = False
+            total_reward = 0
             continue
         if render:
             renderer.draw(

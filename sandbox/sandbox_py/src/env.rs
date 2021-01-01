@@ -171,8 +171,8 @@ impl Env {
         return state.clone()
     }
 
-    pub fn reset(&mut self, agent_index: i32) {
-        self.env.reset(agent_index)
+    pub fn reset(&mut self, agent_index: i32, epsilon: f64) {
+        self.env.reset(agent_index, epsilon)
     }
 
     // pub fn update_agent(&mut self) {

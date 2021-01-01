@@ -7,6 +7,7 @@ use geo::euclidean_distance::EuclideanDistance;
 use rand;
 use rand::seq::SliceRandom;
 use rayon::prelude::*;
+use rand::prelude::IteratorRandom;
 
 pub struct Env {
     pub line_strings: Vec<LineString<f64>>,
@@ -17,6 +18,7 @@ pub struct Env {
     pub ymin: f64,
     pub agents: Vec<Agent>,
     pub max_steps: i32,
+    pub original_targets: Vec<Point<f64>>,
 }
 
 impl Env {
@@ -27,6 +29,7 @@ impl Env {
             agents.push(Agent::new(targets.choose(&mut rand::thread_rng()).unwrap().clone(), line_strings.clone(), max_steps));
         }
         Env {
+            original_targets: targets.clone(),
             line_strings,
             targets,
             scalex,
@@ -37,6 +40,7 @@ impl Env {
             max_steps,
         }
     }
+
 
     pub fn get_line_strings_as_lines(&self) -> Vec<HashMap<&str, f64>> {
         let mut res = vec![];
@@ -102,15 +106,22 @@ impl Env {
         let mut distance_to_target = self.agents[a as usize].position.euclidean_distance(&closest_target);
         self.agents[a as usize].closest_target = closest_target;
         if self.agents[a as usize].last_state.len() > 0 {
-            if self.agents[a as usize].bearing_to_target.abs() - state[0 as usize].abs() > 0.0 || self.agents[a as usize].bearing_to_target.abs() <= 10.0f64.to_radians() {
-                reward = reward + 0.08;
-                if target_in_sight {
-                    reward = reward + 0.16;
+            let target_turn_value = self.agents[a as usize].bearing_to_target.abs() - state[0 as usize].abs();
+            if target_turn_value >= 0.0 || self.agents[a as usize].bearing_to_target.abs() <= 2.0f64.to_radians() {
+                reward = reward + 0.16;
+                if target_in_sight && target_turn_value > 0.0 {
+                    reward = reward + target_turn_value;
+                    //println!("Turn bonus {}", target_turn_value);
                 }
             }
-            if self.agents[a as usize].prev_target_dist - distance_to_target > 0.0 {
+            let distance_target_value = self.agents[a as usize].prev_target_dist - distance_to_target;
+            if distance_target_value > 0.0 {
                 //let distance_score = 1.0 - (distance_to_target / self.agents[a as usize].prev_target_dist);
-                reward = reward + 0.08; //(distance_score / 3.0); // not / 3.0
+                //println!("Distance bonus {}", distance_target_value);
+                if target_in_sight {
+                    reward = reward + distance_target_value * 10.0;
+                }
+                reward = reward + 0.16; //(distance_score / 3.0); // not / 3.0
             } else {
                 self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
             } 
@@ -126,13 +137,13 @@ impl Env {
         for i in 0..self.agents[a as usize].action_space.len() {
             let pr = Ray::new(self.agents[a as usize].action_space.get(i).unwrap().clone(), self.agents[a as usize].speed*2.0, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
             if utils::intersects(&pr, &self.line_strings.par_iter().collect()) {
-                reward = reward - 0.5;
+                reward = reward - 1.5;
                 break;
             }
         }
         if !target_in_sight && prev_past_position_dist - self.agents[a as usize].past_position_distance > 0.0 {
             //let mut backtrack_penalty =  0.0; //(1.0 - (distance_to_target / self.agents[a as usize].prev_target_dist));
-            let backtrack_penalty = self.agents[a as usize].past_position_bearing.abs() / 3.14;
+            let backtrack_penalty = self.agents[a as usize].past_position_bearing.abs() / 3.0;
             reward = reward - backtrack_penalty / 5.0; // 5.0
         }
         // // reward = reward - self.agents[a as usize].age / self.agents[a as usize].max_age;
@@ -164,7 +175,7 @@ impl Env {
         let closest_target = utils::closest_of(possible_targets.iter(), self.agents[a as usize].position).unwrap();
         let distance_to_target = self.agents[a as usize].position.euclidean_distance(&closest_target);
         let relative_bearing_to_target = utils::relative_bearing_to_target(self.agents[a as usize].position, step_ray.line.end_point(), closest_target);
-        if relative_bearing_to_target.abs() <= self.agents[a as usize].fov * 1.3 {
+        if relative_bearing_to_target.abs() <= self.agents[a as usize].fov {
             can_see_target = true;
             for line in self.line_strings.iter() {
                 let intersections = utils::intersections(&LineString(vec![closest_target.into(), self.agents[a as usize].position.into()]), line);
@@ -189,14 +200,21 @@ impl Env {
         return (state, can_see_target);
     }
 
-    pub fn reset(&mut self, agent_index: i32) {
+    pub fn reset(&mut self, agent_index: i32, epsilon: f64) {
+        let mut new_targets = vec![];
+        let mut take_targets = self.original_targets.len() as f64;
+        if self.original_targets.len() as f64*epsilon + 20.0 < self.original_targets.len() as f64 {
+            take_targets = self.original_targets.len() as f64*epsilon + 20.0;
+        }
+        self.original_targets.iter().choose_multiple(&mut rand::thread_rng(), take_targets as usize).iter().for_each(|p| {
+            new_targets.push(p.clone().clone());
+        });
+        self.targets = new_targets.clone();
+        println!("### target count: {} ###",  self.targets.len());
         self.targets.shuffle(&mut rand::thread_rng());
         let start = self.targets.choose(&mut rand::thread_rng()).unwrap().clone();
-        self.agents[agent_index as usize] = Agent::new(start, self.line_strings.clone(), self.max_steps);
+        self.agents[agent_index as usize] = Agent::new(start, self.line_strings.clone(), 250);
         self.agents[agent_index as usize].cast_rays();
-        //let mut agent = Agent::new(start, self.line_strings.clone());
-        //agent.cast_rays();
-        //self.agent = agent;
     }
 }
 #[cfg(test)]

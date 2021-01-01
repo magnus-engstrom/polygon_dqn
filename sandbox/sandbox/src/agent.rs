@@ -37,11 +37,11 @@ pub struct Agent {
 impl Agent {
     pub(crate) fn new(position: Point<f64>, env_line_strings: Vec<LineString<f64>>, max_age: i32) -> Self {
         Agent {
-            speed: 0.006, // 0.0045
+            speed: 0.005, // 0.0045
             age: 1.0,
             direction: rand::thread_rng().gen_range(-3.14, 3.14),
-            ray_count: 39.0,
-            fov: 120.0f64.to_radians(),
+            ray_count: 19.0,
+            fov: 160.0f64.to_radians(),
             visibility: 0.6,
             max_age: max_age as f64,
             position: position,
@@ -57,9 +57,9 @@ impl Agent {
             last_state: vec![],
             action_space: vec![
                 -10.0f64.to_radians(),
-                -1.0f64.to_radians(), // 1
+                -1.5f64.to_radians(), // 1
                 0.0f64.to_radians(),
-                1.0f64.to_radians(), // 1
+                1.5f64.to_radians(), // 1
                 10.0f64.to_radians(),
             ],
             prev_state: vec![],
@@ -135,9 +135,12 @@ impl Agent {
         self.position_ticker = 0;        
     }
 
-    pub fn step(&mut self, action: usize, full_move: bool) {
+    pub fn step(&mut self, mut action: usize, full_move: bool) {
         let mut step_size = self.speed;
         //let direction_change = 0.0;
+        if self.max_age - self.age <= 25.0 {
+            action = rand::thread_rng().gen_range(0, self.action_space.len()-1);
+        }
         let direction_change = self.action_space.get(action as usize).unwrap(); 
         self.position_ticker = self.position_ticker - 1;
         if !full_move {

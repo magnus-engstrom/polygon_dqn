@@ -11,27 +11,27 @@ from tb import ModifiedTensorBoard
 
 class Model:
     def __init__(self, n_actions):
-        tf.random.set_seed(1)
-        random.seed(1)
-        np.random.seed(1)
+        tf.random.set_seed(2)
+        random.seed(2)
+        np.random.seed(2)
         self.total_memory = deque(maxlen=500000)
         self.min_batch_samples = 1500
         self.training_started = False
         self.epsilon = 1
-        self.epsilon_decay = 0.997
+        self.epsilon_decay = 0.998
         self.min_epsilon = 0.01
         self.batch_size = 64
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.995 #0.997
-        self.name = "model_36"
+        self.name = "model_60"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0
         self.max_mean_targets_found = 0
         self.tensorboard_callback = ModifiedTensorBoard(self.name, log_dir="logs/{}".format(self.name))
 
-    def store_memory_and_train(self, episode_memory, targets_found, mean_targets_found, minutes_since_start):
+    def store_memory_and_train(self, episode_memory, targets_found, mean_targets_found, minutes_since_start, total_reward, wall_end, age_end):
         self.total_memory += episode_memory
         print(len(self.total_memory), "rows in memory")
         if len(self.total_memory) >= self.batch_size * self.min_batch_samples:
@@ -47,7 +47,10 @@ class Model:
                 learning_rate=self.learning_rate,
                 epsilon=self.epsilon,
                 mean_targets_found = mean_targets_found,
-                minutes_since_start=minutes_since_start
+                minutes_since_start=minutes_since_start,
+                total_reward=total_reward, 
+                wall_end=wall_end, 
+                age_end=age_end,
             )
             self.__train()
             if len(episode_memory) > self.batch_size * 3:
@@ -63,7 +66,7 @@ class Model:
                     self.epsilon *= 1.002
                     print("increasing epsilon, lowering learning rate")
                     if self.learning_rate > self.min_learning_rate:
-                        self.learning_rate *= 0.9995
+                        self.learning_rate *= 0.999
                         K.set_value(self.model.optimizer.learning_rate, self.learning_rate)
                     #self.__soft_updae(tf.keras.models.load_model("models/" + self.name + "_best"), 1.0/100.0)
                 self.mean_targets_found = (mean_targets_found + self.mean_targets_found) / 2.0
