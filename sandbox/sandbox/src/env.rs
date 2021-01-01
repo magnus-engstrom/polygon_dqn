@@ -82,9 +82,7 @@ impl Env {
         let direction_change = self.agents[a as usize].action_space.get(action as usize).unwrap().clone();
         if direction_change.abs() < 3.0f64.to_radians() {
             full_move = true
-        } else {
-            reward = reward - 0.08;
-        }
+        } 
         let step_ray = Ray::new(direction_change, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
         if utils::intersects(&step_ray, &self.line_strings.par_iter().collect()) {
             let state = self.agents[a as usize].last_state.iter().copied().collect();
@@ -93,7 +91,7 @@ impl Env {
             self.agents[a as usize].active = false;
             return (state, reward, true);
         }
-        let prev_past_position_dist = self.agents[a as usize].past_position_distance;
+        //let prev_past_position_dist = self.agents[a as usize].past_position_distance;
         self.agents[a as usize].step(action as usize, full_move);
         let (state ,target_in_sight) = self.get_state(a);
         let mut possible_targets = vec![];
@@ -106,14 +104,14 @@ impl Env {
         let mut distance_to_target = self.agents[a as usize].position.euclidean_distance(&closest_target);
         self.agents[a as usize].closest_target = closest_target;
         if self.agents[a as usize].last_state.len() > 0 {
-            let target_turn_value = self.agents[a as usize].bearing_to_target.abs() - state[0 as usize].abs();
-            if target_turn_value >= 0.0 || self.agents[a as usize].bearing_to_target.abs() <= 2.0f64.to_radians() {
-                reward = reward + 0.16;
-                if target_in_sight && target_turn_value > 0.0 {
-                    reward = reward + target_turn_value;
-                    //println!("Turn bonus {}", target_turn_value);
-                }
-            }
+        //     let target_turn_value = self.agents[a as usize].bearing_to_target.abs() - state[0 as usize].abs();
+        //     if target_turn_value >= 0.0 || self.agents[a as usize].bearing_to_target.abs() <= 2.0f64.to_radians() {
+        //         reward = reward + 0.16;
+        //         if target_in_sight && target_turn_value > 0.0 {
+        //             reward = reward + target_turn_value;
+        //             //println!("Turn bonus {}", target_turn_value);
+        //         }
+        //     }
             let distance_target_value = self.agents[a as usize].prev_target_dist - distance_to_target;
             if distance_target_value > 0.0 {
                 //let distance_score = 1.0 - (distance_to_target / self.agents[a as usize].prev_target_dist);
@@ -121,11 +119,20 @@ impl Env {
                 if target_in_sight {
                     reward = reward + distance_target_value * 10.0;
                 }
-                reward = reward + 0.16; //(distance_score / 3.0); // not / 3.0
-            } else {
-                self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
-            } 
+                //reward = reward + 0.16; //(distance_score / 3.0); // not / 3.0
+            } //else {
+        //         self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
+        //     } 
         }
+        if self.agents[a as usize].last_state.len() > 0 && !target_in_sight {
+            let distance_target_value = self.agents[a as usize].prev_target_dist - distance_to_target;
+            if distance_target_value < 0.0 {
+                self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
+            } else {
+                reward = reward + 0.04;
+            }
+        }
+        //     if distance_target_value > 0.0 {
         self.agents[a as usize].bearing_to_target = state[0 as usize];
         // if state.get(0).unwrap().abs() / 3.14 < 0.5 {
         //     reward = reward + (1.0 - (state.get(0).unwrap().abs() / 3.14)) / 5.0;
@@ -133,7 +140,9 @@ impl Env {
         //         reward = reward + 0.01;
         //     }
         // }
- 
+        // if !target_in_sight {
+        //     self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
+        // }
         for i in 0..self.agents[a as usize].action_space.len() {
             let pr = Ray::new(self.agents[a as usize].action_space.get(i).unwrap().clone(), self.agents[a as usize].speed*2.0, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
             if utils::intersects(&pr, &self.line_strings.par_iter().collect()) {
@@ -141,13 +150,13 @@ impl Env {
                 break;
             }
         }
-        if !target_in_sight && prev_past_position_dist - self.agents[a as usize].past_position_distance > 0.0 {
-            //let mut backtrack_penalty =  0.0; //(1.0 - (distance_to_target / self.agents[a as usize].prev_target_dist));
-            let backtrack_penalty = self.agents[a as usize].past_position_bearing.abs() / 3.0;
-            reward = reward - backtrack_penalty / 5.0; // 5.0
-        }
+        // if !target_in_sight && prev_past_position_dist - self.agents[a as usize].past_position_distance > 0.0 {
+        //     //let mut backtrack_penalty =  0.0; //(1.0 - (distance_to_target / self.agents[a as usize].prev_target_dist));
+        //     //let backtrack_penalty = self.agents[a as usize].past_position_bearing.abs() / 3.0;
+        //     reward = reward - 0.16; //backtrack_penalty / 5.0; // 5.0
+        // }
         // // reward = reward - self.agents[a as usize].age / self.agents[a as usize].max_age;
-        if distance_to_target < 0.04 {
+        if distance_to_target < 0.1 {
             reward = 7.0;
             distance_to_target = 1.0;
             self.agents[a as usize].collect_target(closest_target, self.targets.len() as i32);
@@ -175,7 +184,7 @@ impl Env {
         let closest_target = utils::closest_of(possible_targets.iter(), self.agents[a as usize].position).unwrap();
         let distance_to_target = self.agents[a as usize].position.euclidean_distance(&closest_target);
         let relative_bearing_to_target = utils::relative_bearing_to_target(self.agents[a as usize].position, step_ray.line.end_point(), closest_target);
-        if relative_bearing_to_target.abs() <= self.agents[a as usize].fov {
+        if relative_bearing_to_target.abs() <= self.agents[a as usize].fov / 4.0 {
             can_see_target = true;
             for line in self.line_strings.iter() {
                 let intersections = utils::intersections(&LineString(vec![closest_target.into(), self.agents[a as usize].position.into()]), line);

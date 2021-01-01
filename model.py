@@ -14,17 +14,17 @@ class Model:
         tf.random.set_seed(2)
         random.seed(2)
         np.random.seed(2)
-        self.total_memory = deque(maxlen=500000)
-        self.min_batch_samples = 1500
+        self.total_memory = deque(maxlen=150000)
+        self.min_batch_samples = 500
         self.training_started = False
         self.epsilon = 1
-        self.epsilon_decay = 0.998
+        self.epsilon_decay = 0.9985
         self.min_epsilon = 0.01
         self.batch_size = 64
         self.model = None
         self.n_actions = n_actions
-        self.discount = 0.995 #0.997
-        self.name = "model_60"
+        self.discount = 0.997
+        self.name = "model_64"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0
@@ -53,7 +53,7 @@ class Model:
                 age_end=age_end,
             )
             self.__train()
-            if len(episode_memory) > self.batch_size * 3:
+            if len(episode_memory) > self.batch_size * 5:
                 print("double training")
                 self.__train()
             if self.epsilon > self.min_epsilon:
@@ -63,7 +63,7 @@ class Model:
                 self.mean_targets_found = mean_targets_found
             else:
                 if self.epsilon < 0.7:
-                    self.epsilon *= 1.002
+                    self.epsilon *= 1.001
                     print("increasing epsilon, lowering learning rate")
                     if self.learning_rate > self.min_learning_rate:
                         self.learning_rate *= 0.999
@@ -99,7 +99,7 @@ class Model:
             target_vec[action] = target
             loss = self.model.fit(old_state, target_vec.reshape(-1, self.n_actions), epochs=1, verbose=0, callbacks=[self.tensorboard_callback])
             batch_losses.append([loss.history['loss'], [old_state, action, new_state, reward, done]])
-            self.__soft_updae(self.model, 1.0/2500.0)
+            self.__soft_updae(self.model, 1.0/1000.0)
             # for t, e in zip(self.target_model.trainable_variables, self.model.trainable_variables):
             #             t.assign(t * (1 - TAU) + e * TAU)
         batch_losses = sorted(batch_losses, key=lambda x: x[0], reverse=True)

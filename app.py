@@ -53,7 +53,9 @@ if __name__ == "__main__":
         target_bearing, target_distance, can_see_target, *_ = state
         if len(state) > 1: old_state = state
         if end or (render and env.agent_targets_count(agent_id) > 10.0) or not env.agent_active(agent_id):
-            if not render:
+            if not render and (model.batch_size * 100 < len(model.total_memory) or env.agent_targets_count(agent_id) > 0):
+                if env.agent_targets_count(agent_id) > 0:
+                    print("target found!")
                 if not env.agent_active(agent_id) and not end:
                     age_end += 1
                 else:

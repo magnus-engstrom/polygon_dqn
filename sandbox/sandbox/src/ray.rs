@@ -62,8 +62,13 @@ impl Ray {
         for i in 0..(ray_count) as i32 {
             let x_adj = x.atan2(0.97);
             let angle = x;
+            let mut in_fov = false;
+            if angle.abs() < 1.0 {
+                in_fov = true;
+            }
+            //println!("angle {}", angle);
             x = x + a;
-            let ray = Ray::new(angle, length, direction, position, true, x_adj);
+            let ray = Ray::new(angle, length, direction, position, in_fov, x_adj);
             let (tmp_min_x, tmp_min_y, tmp_max_x, tmp_max_y) = utils::min_max_point(&ray.line.end, min_x, min_y, max_x, max_y);
             min_x = tmp_min_x;
             min_y = tmp_min_y;
@@ -71,8 +76,8 @@ impl Ray {
             max_y = tmp_max_y;
             rays.push(ray)
         }
-        rays.push(Ray::new(1.5, length, direction, position, false, 1.5));
-        rays.push(Ray::new(-1.5, length, direction, position, false, -1.5));
+        //rays.push(Ray::new(1.5, length, direction, position, false, 1.5));
+        //rays.push(Ray::new(-1.5, length, direction, position, false, -1.5));
         (rays, Rect::new((min_x, min_y),(max_x, max_y)))
     }
 }
