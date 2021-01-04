@@ -18,6 +18,14 @@ class Renderer:
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()
 
+    def handle_input(self):
+        ret = set()
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+                if pygame.key.get_focused():
+                    ret.add(event.key)
+        return ret
+
     def prepare_assets_3D(self):
         floor = pygame.image.load(os.path.join("assets/floor.png"))
         floor.convert()

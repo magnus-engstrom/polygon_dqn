@@ -5,7 +5,7 @@ use crate::ray::Ray;
 use pyo3::prelude::*;
 use rand::Rng;
 use std::collections::HashMap;
-
+use geo::map_coords::MapCoordsInplace;
 pub struct Agent {
     pub speed: f64,
     pub direction: f64,
@@ -32,22 +32,26 @@ pub struct Agent {
     pub coordinates_path: Vec<Point<f64>>,
     pub env_line_strings: Vec<LineString<f64>>,
     pub bearing_to_target: f64,
+    pub targets_found: i32,
 }
 
 impl Agent {
-    pub(crate) fn new(position: Point<f64>, env_line_strings: Vec<LineString<f64>>, max_age: i32) -> Self {
+    pub(crate) fn new(mut position: Point<f64>, env_line_strings: Vec<LineString<f64>>, max_age: i32) -> Self {
+    let first_target = position.clone();
+        position.map_coords_inplace(|&(x, y)| ((x + rand::thread_rng().gen_range(-0.01, 0.01)), (y + rand::thread_rng().gen_range(-0.01, 0.01))));
         Agent {
-            speed: 0.01, // 0.0045
+            speed: 0.006, // 0.0045
             age: 1.0,
             direction: rand::thread_rng().gen_range(-3.14, 3.14),
-            ray_count: 39.0,
-            fov: 380.0f64.to_radians(),
+            ray_count: 29.0,
+            fov: 130.0f64.to_radians(),
             visibility: 0.6,
             max_age: max_age as f64,
             position: position,
             rays: vec![],
             rays_bb:Rect::new((f64::NEG_INFINITY,f64::NEG_INFINITY),(f64::INFINITY,f64::INFINITY)),
-            collected_targets: vec![position],
+            collected_targets: vec![first_target],
+            targets_found: 0,
             closest_target: Point::new(0.0,0.0),
             active: true,
             position_ticker: 70, // 50
@@ -56,11 +60,11 @@ impl Agent {
             past_position_bearing: 0.0,
             last_state: vec![],
             action_space: vec![
-                //-10.0f64.to_radians(),
-                -5.0f64.to_radians(), // 1
+                -15.0f64.to_radians(),
+                -3.0f64.to_radians(), // 1
                 0.0f64.to_radians(),
-                5.0f64.to_radians(), // 1
-                //10.0f64.to_radians(),
+                3.0f64.to_radians(), // 1
+                15.0f64.to_radians(),
             ],
             prev_state: vec![],
             memory: vec![],
@@ -122,11 +126,13 @@ impl Agent {
             ];
             self.memory.push(key_vals.to_object(py));
         }
+        //println!("state: {:#?}", new_state);
         self.prev_state = new_state.clone();
     }
 
     pub fn collect_target(&mut self, target: Point<f64>, n_targets: i32) {
         self.age = 1.0;
+        self.targets_found = self.targets_found + 1;
         self.collected_targets.push(target);
         if self.collected_targets.len() as i32 == n_targets {
             self.collected_targets = vec![];
@@ -135,34 +141,26 @@ impl Agent {
         self.position_ticker = 0;        
     }
 
-    pub fn step(&mut self, mut action: usize, full_move: bool) {
-        let mut step_size = self.speed;
-        //let direction_change = 0.0;
-        if self.max_age - self.age <= 25.0 {
-            action = rand::thread_rng().gen_range(0, self.action_space.len()-1);
-        }
+    pub fn step(&mut self, action: usize) {
+        let step_size = self.speed;
         let direction_change = self.action_space.get(action as usize).unwrap(); 
         self.position_ticker = self.position_ticker - 1;
-        if !full_move {
-            step_size = self.speed / 6.0;
-        } else {
-            if self.position_ticker <= 0 {
-                self.position_ticker = 70; // 50
-                self.past_positions.push(self.position);
-            }
-            if self.past_positions.len() > 3 {
-                self.past_positions = self.past_positions.drain(self.past_positions.len()-3..).collect();
-            }
+        if self.position_ticker <= 0 {
+            self.position_ticker = 50;
+            self.past_positions.push(self.position);
+        }
+        if self.past_positions.len() > 3 {
+            self.past_positions = self.past_positions.drain(self.past_positions.len()-3..).collect();
         }
         if self.age > self.max_age {
             self.active = false;
         }
         self.direction += direction_change;
-        if self.direction > 3.14 {
-            self.direction = self.direction - 6.28;
+        if self.direction > 3.14159 {
+            self.direction = self.direction - 3.14159*2.0;
         }
-        if self.direction < -3.14 {
-            self.direction = self.direction + 6.28;
+        if self.direction < -3.14159 {
+            self.direction = self.direction + 3.14159*2.0;
         }
         let closest_past_position = utils::closest_of(self.past_positions.iter(), self.position).unwrap();
         let new_position = Point::new(

@@ -11,20 +11,20 @@ from tb import ModifiedTensorBoard
 
 class Model:
     def __init__(self, n_actions):
-        tf.random.set_seed(2)
-        random.seed(2)
-        np.random.seed(2)
-        self.total_memory = deque(maxlen=150000)
+        tf.random.set_seed(1)
+        random.seed(1)
+        np.random.seed(1)
+        self.total_memory = deque(maxlen=200000)
         self.min_batch_samples = 500
         self.training_started = False
         self.epsilon = 1
-        self.epsilon_decay = 0.9985
+        self.epsilon_decay = 0.999
         self.min_epsilon = 0.01
         self.batch_size = 64
         self.model = None
         self.n_actions = n_actions
-        self.discount = 0.997
-        self.name = "model_64"
+        self.discount = 0.997 #0.997
+        self.name = "model_118"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0
@@ -53,7 +53,7 @@ class Model:
                 age_end=age_end,
             )
             self.__train()
-            if len(episode_memory) > self.batch_size * 5:
+            if len(episode_memory) > self.batch_size * 10:
                 print("double training")
                 self.__train()
             if self.epsilon > self.min_epsilon:
@@ -65,9 +65,9 @@ class Model:
                 if self.epsilon < 0.7:
                     self.epsilon *= 1.001
                     print("increasing epsilon, lowering learning rate")
-                    if self.learning_rate > self.min_learning_rate:
-                        self.learning_rate *= 0.999
-                        K.set_value(self.model.optimizer.learning_rate, self.learning_rate)
+                    # if self.learning_rate > self.min_learning_rate:
+                    #     self.learning_rate *= 0.999
+                    #     K.set_value(self.model.optimizer.learning_rate, self.learning_rate)
                     #self.__soft_updae(tf.keras.models.load_model("models/" + self.name + "_best"), 1.0/100.0)
                 self.mean_targets_found = (mean_targets_found + self.mean_targets_found) / 2.0
             if self.max_mean_targets_found < self.mean_targets_found:
@@ -75,7 +75,7 @@ class Model:
                 self.max_mean_targets_found = self.mean_targets_found
 
     def predict_action(self, state, no_exploration):
-            if (no_exploration or random.uniform(0,1) > self.epsilon) and len(state) > 0 and random.uniform(0,1) > self.min_epsilon:
+            if (no_exploration or random.uniform(0,1) > self.epsilon) and len(state) > 0 and random.uniform(0,1) > self.min_epsilon and self.model:
                 state_dataset = tf.data.Dataset.from_tensor_slices(state.reshape(-1, len(state))).batch(1)
                 return np.argmax(self.model.predict(state_dataset))
             else:
@@ -99,9 +99,13 @@ class Model:
             target_vec[action] = target
             loss = self.model.fit(old_state, target_vec.reshape(-1, self.n_actions), epochs=1, verbose=0, callbacks=[self.tensorboard_callback])
             batch_losses.append([loss.history['loss'], [old_state, action, new_state, reward, done]])
-            self.__soft_updae(self.model, 1.0/1000.0)
+            self.__soft_updae(self.model, 0.0005)
             # for t, e in zip(self.target_model.trainable_variables, self.model.trainable_variables):
             #             t.assign(t * (1 - TAU) + e * TAU)
+            if reward > 0:
+                print("reward:", reward)
+                print("target reward", target)
+                print(target_vec)
         batch_losses = sorted(batch_losses, key=lambda x: x[0], reverse=True)
         for sample in batch_losses[:int(self.batch_size / 10)]:
             self.total_memory.append(sample[1])

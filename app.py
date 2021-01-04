@@ -49,11 +49,13 @@ if __name__ == "__main__":
         action = model.predict_action(np.array(old_state), render)
         (state, reward, end) = env.step(action, agent_id)
         total_reward += reward
-        state[0] /= 3.14 # scale target bearing to between -1 to +1
-        target_bearing, target_distance, can_see_target, *_ = state
+        if reward > 0:
+            print(reward)
+        target_distance = 1.0
+        can_see_target = 0.0
         if len(state) > 1: old_state = state
-        if end or (render and env.agent_targets_count(agent_id) > 10.0) or not env.agent_active(agent_id):
-            if not render and (model.batch_size * 100 < len(model.total_memory) or env.agent_targets_count(agent_id) > 0):
+        if end or not env.agent_active(agent_id):
+            if not render and (env.agent_targets_count(agent_id) > 0 or len(model.total_memory) > 64*100):
                 if env.agent_targets_count(agent_id) > 0:
                     print("target found!")
                 if not env.agent_active(agent_id) and not end:
@@ -86,18 +88,19 @@ if __name__ == "__main__":
             total_reward = 0
             continue
         if render:
+            target_bearing, *_ = state
             renderer.draw(
                 env.lines, 
                 env.agent_rays(agent_id), 
                 env.targets, 
-                target_bearing*3.14, 
+                target_bearing, 
                 target_distance, 
                 reward,
                 list(env.agent_closest_target(agent_id)), 
                 can_see_target,
                 env.agent_past_position(agent_id),
                 env.agent_collected_targets(agent_id), 
-                sum(tagets_found) / len(tagets_found),
+                (sum(tagets_found)+1) / (len(tagets_found)+1),
                 env.agent_age(agent_id),
             )
         
