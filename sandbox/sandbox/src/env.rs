@@ -105,10 +105,12 @@ impl Env {
             return (state, reward, true);
         }
 
+        /*
         let proximity_ray = Ray::new(direction_change, self.agents[a as usize].speed*3.0, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
         if utils::intersects(&proximity_ray, &self.line_strings.iter().collect()) {
-            reward = -2.0; //??
+            reward = -2.0;
         }
+         */
 
         self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
         self.agents[a as usize].step(action as usize);

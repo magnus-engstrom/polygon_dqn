@@ -31,7 +31,7 @@ const TAU: f64 = 0.005;
 const REPLAY_BUFFER_CAPACITY: usize = 250_000;
 // The training batch size for each training iteration.
 //const TRAINING_BATCH_SIZE: usize = 100;
-const TRAINING_BATCH_SIZE: usize = 64;
+const TRAINING_BATCH_SIZE: usize = 256;
 // The total number of episodes.
 //const MAX_EPISODES: usize = 100;
 const MAX_EPISODES: usize = 500_000;
