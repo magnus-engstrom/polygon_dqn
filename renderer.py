@@ -121,6 +121,4 @@ class Renderer:
         self.clock.tick(22)
         self.frame_count += 1
         return self.frame_count
-
-
-
+        

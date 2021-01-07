@@ -37,10 +37,11 @@ pub struct Agent {
 
 impl Agent {
     pub(crate) fn new(mut position: Point<f64>, env_line_strings: Vec<LineString<f64>>, max_age: i32) -> Self {
-    let first_target = position.clone();
-        position.map_coords_inplace(|&(x, y)| ((x + rand::thread_rng().gen_range(-0.01, 0.01)), (y + rand::thread_rng().gen_range(-0.01, 0.01))));
+        println!("max steps: {}", max_age);
+        let first_target = position.clone();
+        position.map_coords_inplace(|&(x, y)| ((x + rand::thread_rng().gen_range(-0.005, 0.005)), (y + rand::thread_rng().gen_range(-0.005, 0.005))));
         Agent {
-            speed: 0.006, // 0.0045
+            speed: 0.007, // 0.0045
             age: 1.0,
             direction: rand::thread_rng().gen_range(-3.14, 3.14),
             ray_count: 29.0,
@@ -60,11 +61,11 @@ impl Agent {
             past_position_bearing: 0.0,
             last_state: vec![],
             action_space: vec![
-                -15.0f64.to_radians(),
+                -10.0f64.to_radians(),
                 -3.0f64.to_radians(), // 1
                 0.0f64.to_radians(),
                 3.0f64.to_radians(), // 1
-                15.0f64.to_radians(),
+                10.0f64.to_radians(),
             ],
             prev_state: vec![],
             memory: vec![],
@@ -132,6 +133,7 @@ impl Agent {
 
     pub fn collect_target(&mut self, target: Point<f64>, n_targets: i32) {
         self.age = 1.0;
+        self.max_age = self.max_age + 100.0;
         self.targets_found = self.targets_found + 1;
         self.collected_targets.push(target);
         if self.collected_targets.len() as i32 == n_targets {

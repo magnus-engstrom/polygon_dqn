@@ -289,8 +289,8 @@ impl Env {
     pub fn reset(&mut self, agent_index: i32, epsilon: f64) {
         let mut new_targets = vec![];
         let mut take_targets = self.original_targets.len() as f64;
-        if self.original_targets.len() as f64*epsilon + 10.0 < self.original_targets.len() as f64 {
-            take_targets = self.original_targets.len() as f64*epsilon + 10.0;
+        if self.original_targets.len() as f64*(epsilon+epsilon) + 10.0 < self.original_targets.len() as f64 {
+            take_targets = self.original_targets.len() as f64*(epsilon+epsilon) + 10.0;
         }
         self.original_targets.iter().choose_multiple(&mut rand::thread_rng(), take_targets as usize).iter().for_each(|p| {
             new_targets.push(p.clone().clone());
@@ -299,7 +299,7 @@ impl Env {
         println!("### target count: {} ###",  self.targets.len());
         self.targets.shuffle(&mut rand::thread_rng());
         let start = self.targets.choose(&mut rand::thread_rng()).unwrap().clone();
-        self.agents[agent_index as usize] = Agent::new(start, self.line_strings.clone(), self.max_steps);
+        self.agents[agent_index as usize] = Agent::new(start, self.line_strings.clone(), self.max_steps + ((1.0 - epsilon) * 1000.0) as i32);
         self.agents[agent_index as usize].cast_rays();
     }
 }

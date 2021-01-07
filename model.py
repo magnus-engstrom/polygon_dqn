@@ -14,17 +14,17 @@ class Model:
         tf.random.set_seed(1)
         random.seed(1)
         np.random.seed(1)
-        self.total_memory = deque(maxlen=200000)
+        self.total_memory = deque(maxlen=250000)
         self.min_batch_samples = 500
         self.training_started = False
         self.epsilon = 1
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.997
         self.min_epsilon = 0.01
-        self.batch_size = 64
+        self.batch_size = 128
         self.model = None
         self.n_actions = n_actions
         self.discount = 0.997 #0.997
-        self.name = "model_118"
+        self.name = "model_123"
         self.min_learning_rate = 0.00002
         self.learning_rate = 0.0005
         self.mean_targets_found = 0

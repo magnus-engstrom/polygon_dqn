@@ -30,7 +30,7 @@ if __name__ == "__main__":
     random.seed(1)
     np.random.seed(1)
     n_agents = 1
-    env = Env("sandbox/data/" + random.choice(polygons), n_agents, 250)
+    env = Env("sandbox/data/" + random.choice(polygons), n_agents, 1000)
     renderer = Renderer(500)
     n_actions = len(env.action_space(0))
     model = Model(n_actions)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     age_end
                 )
             # if render: print(env.agent_coordinates_path(agent_id))
-            env.reset(agent_id, model.epsilon+model.epsilon)
+            env.reset(agent_id, model.epsilon)
             old_state = []
             agg_reward = 0
             render = False
