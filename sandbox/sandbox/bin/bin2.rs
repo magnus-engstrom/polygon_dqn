@@ -50,7 +50,7 @@ fn model(p: &nn::Path, nact: i64) -> Box<dyn Fn(&Tensor) -> (Tensor, Tensor)> {
 
 pub fn main() {
     let mut rng: StdRng = SeedableRng::seed_from_u64(1);
-    let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1);
+    let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1, EPISODE_LENGTH as i32);
     let mut renderer = Renderer::new(env.scalex, env.scaley);
     //renderer.init();
     println!("action space: {}", env.action_space());
@@ -73,7 +73,7 @@ pub fn main() {
             break 'running;
         }
         let mut obs = Tensor::zeros(&[num_obs as _], FLOAT_CPU);
-        env.reset(0);
+        env.reset(0, 1.0f64);
         //dbg!(&obs);
         let mut total_reward = 0.0;
         for _ in 0..EPISODE_LENGTH {

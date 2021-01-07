@@ -22,8 +22,8 @@ pub fn import_geometry(path: String) -> (Vec<LineString<f64>>, Vec<Point<f64>>, 
     let collection = load_json(path);
     let (mut lines, mut targets) = env_from_geometry(collection);
     let (xmin, ymin, _xmax, _ymax) = calculate_scales(&lines);
-    let scalex = 0.02007599999999954 / 5.0;
-    let scaley = 0.008532999999999902 / 5.0;
+    let scalex = 0.02007599999999954 / 10.0;
+    let scaley = 0.008532999999999902 / 10.0;
     scale_geometry(scalex, scaley, xmin, ymin, &mut lines, &mut targets);
     (lines, targets, scalex, scaley, xmin, ymin)
 }
@@ -189,12 +189,12 @@ pub fn cull_line_strings_precull<'a>(
     let intersecting_line_strings = line_strings.par_iter()
         .filter(|line_string| {
             might_intersect_line_string(line_string, min_x, min_y, max_x, max_y)
-            && bbox.intersects(line_string.clone())
+                && bbox.intersects(line_string.clone())
         });
     intersecting_line_strings.collect()
 }
 
-pub fn find_intersections_seq(
+pub fn find_intersections_par(
     rays: &mut Vec<Ray>,
     line_strings: &Vec<&LineString<f64>>,
     origin_position: Point<f64>,

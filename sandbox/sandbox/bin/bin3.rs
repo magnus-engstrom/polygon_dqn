@@ -21,6 +21,7 @@ use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 use crate::renderer::Renderer;
 use moving_avg::MovingAverage;
+use std::time::Instant;
 
 // The impact of the q value of the next state on the current state's q value.
 const GAMMA: f64 = 0.997;
@@ -47,10 +48,10 @@ const THETA: f64 = 0.15;
 const SIGMA: f64 = 0.1;
 
 const EPSILON: f64 = 1.0;
-const MIN_EPSILON: f64 = 0.1;
-const DECAY: f64 = 0.99999;
+const MIN_EPSILON: f64 = 0.01;
+const DECAY: f64 = 0.999999;
 
-const ACTOR_LEARNING_RATE: f64 = 1e-4;
+const ACTOR_LEARNING_RATE: f64 = 5e-4;
 const CRITIC_LEARNING_RATE: f64 = 1e-3;
 
 struct OuNoise {
@@ -155,7 +156,7 @@ impl ReplayBuffer {
     }
 
     fn random_batch(&self, batch_size: usize) -> Option<(Tensor, Tensor, Tensor, Tensor)> {
-        if self.len < 3 {
+        if self.len < TRAINING_BATCH_SIZE * 2 {
             return None;
         }
 
@@ -397,9 +398,9 @@ impl Agent {
 
 pub fn main() {
     let mut rng: StdRng = SeedableRng::seed_from_u64(1);
-    let mut wtr = Writer::from_path("stats1.csv").unwrap();
+    let mut wtr = Writer::from_path("stats.csv").unwrap();
 
-    let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1);
+    let mut env = Env::new("../../sandbox/data/gavle.json".to_string(), 1, EPISODE_LENGTH as i32);
     let mut renderer = Renderer::new(env.scalex, env.scaley);
     renderer.init();
     println!("action space: {}", env.action_space());
@@ -429,16 +430,23 @@ pub fn main() {
     let mut total_rewards: f64 = 0.0;
     let mut target_avg_20 = MovingAverage::new(20);
     let mut target_avg_100 = MovingAverage::new(100);
+    let mut max_target_avg_100: f64 = 0.0;
+    let start = Instant::now();
+
     'running: for episode in 0..MAX_EPISODES as i32 {
         if renderer.quit() {
             break 'running;
         }
         let mut obs = Tensor::zeros(&[num_obs as _], FLOAT_CPU);
-        env.reset(0);
+        env.reset(0, 1.0f64);
         //dbg!(&obs);
         let mut episode_rewards = 0.0;
         for _ in 0..EPISODE_LENGTH {
-
+            if(renderer.render) {
+                agent.train = false;
+            } else {
+                agent.train = true;
+            }
             let actions = agent.actions(&obs);
             //dbg!(&t, &t.argmax(-1, true));
             //let mut actions = 2.0 * f64::from(t);
@@ -455,24 +463,28 @@ pub fn main() {
             let (state, reward, done) = env.step(action, 0);
             renderer.clear();
             renderer.render_line_strings(&env.line_strings.iter().collect(), Color::RGB(0, 255, 0), &env.agents.get(0).unwrap().position);
-            renderer.render_points(&env.targets, Color::RGB(255, 0, 255), &env.agents.get(0).unwrap().position);
+            renderer.render_points(&env.possible_targets, Color::RGB(255, 0, 255), &env.agents.get(0).unwrap().position);
             renderer.render_rays(&env.agents.get(0).unwrap().rays, Color::RGB(0, 0, 255), &env.agents.get(0).unwrap().position);
             renderer.present();
             episode_rewards += reward;
             let state_t = Tensor::of_slice(&state).totype(Float);
             //state_t;
             //dbg!(&state_t);
-            agent.remember(&obs, &actions.into(), &reward.into(), &state_t);
-            total_steps += 1;
+            if(!renderer.render) {
+                agent.remember(&obs, &actions.into(), &reward.into(), &state_t);
+                total_steps += 1;
+            }
             if done {
                 break;
             }
             obs = state_t;
         }
-        let episode_targets = (env.agents.get(0).unwrap().collected_targets.len() - 1) as i32;
+        let episode_targets = env.agents.get(0).unwrap().targets_found;
         let episode_steps = total_steps - last_step;
-        total_targets += episode_targets;
-        total_rewards += episode_rewards;
+        if(!renderer.render) {
+            total_targets += episode_targets;
+            total_rewards += episode_rewards;
+        }
         let targets_per_step = match total_targets {
             0 => 0f64,
             x => x as f64 / total_steps as f64
@@ -484,7 +496,13 @@ pub fn main() {
 
 
         //println!("episode {}(steps {}, targets {}), total step {}, total targets {}, target/step {}, reward {}, epsilon {}", episode, total_step - last_step, env.agents.get(0).unwrap().collected_targets.len() - 1, total_step, found_targets, found_targets/total_step as f64, total_reward, agent.my_noise.epsilon);
+        let tmp_target_avg_20 = target_avg_20.feed(episode_targets as f64);
+        let tmp_target_avg_100 = target_avg_100.feed(episode_targets as f64);
+
+        max_target_avg_100 = max_target_avg_100.max(tmp_target_avg_100);
+
         let record = StatsRow{
+            training_steps: episode * TRAINING_BATCH_SIZE as i32,
             episode,
             episode_steps,
             episode_targets,
@@ -494,11 +512,13 @@ pub fn main() {
             targets_per_step,
             targets_per_episode,
             rewards_per_step: total_rewards / total_steps as f64,
-            target_avg_20: target_avg_20.feed(episode_targets as f64),
-            target_avg_100: target_avg_100.feed(episode_targets as f64),
+            target_avg_20: tmp_target_avg_20,
+            target_avg_100: tmp_target_avg_100,
+            max_target_avg_100: max_target_avg_100,
             epsilon: agent.my_noise.epsilon,
         };
         dbg!(&record);
+        dbg!(total_steps as f64 / start.elapsed().as_secs_f64());
         wtr.serialize(record).unwrap();
         wtr.flush().unwrap();
         last_step = total_steps;
@@ -510,6 +530,7 @@ pub fn main() {
 
 #[derive(Serialize, Debug)]
 struct StatsRow {
+    training_steps: i32,
     episode: i32,
     episode_steps: i32,
     episode_targets: i32,
@@ -521,5 +542,6 @@ struct StatsRow {
     rewards_per_step: f64,
     target_avg_20: f64,
     target_avg_100: f64,
+    max_target_avg_100: f64,
     epsilon: f64,
 }

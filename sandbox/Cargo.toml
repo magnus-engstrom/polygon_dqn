@@ -1,7 +1,6 @@
 [workspace]
 
 members = [
-    "sandbox_py",
     "sandbox",
     "line_intersection",
 ]
