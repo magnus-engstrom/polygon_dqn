@@ -28,7 +28,7 @@ const GAMMA: f64 = 0.997;
 // The weight for updating the target networks.
 const TAU: f64 = 0.005;
 // The capacity of the replay buffer used for sampling training data.
-const REPLAY_BUFFER_CAPACITY: usize = 250_000;
+const REPLAY_BUFFER_CAPACITY: usize = 1_000_000;
 // The training batch size for each training iteration.
 //const TRAINING_BATCH_SIZE: usize = 100;
 const TRAINING_BATCH_SIZE: usize = 256;

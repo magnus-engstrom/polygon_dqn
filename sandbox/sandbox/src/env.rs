@@ -95,43 +95,38 @@ impl Env {
     pub fn step(&mut self, action: i32, a: i32) -> (Vec<f64>, f64, bool) {
         let direction_change = self.agents[a as usize].action_space.get(action as usize).unwrap().clone();
         let mut reward = 0.0;
-
         let step_ray = Ray::new(direction_change, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
         if utils::intersects(&step_ray, &self.line_strings.iter().collect()) {
             let state = self.agents[a as usize].last_state.iter().copied().collect();
             reward = -7.0;
-            //self.agents[a as usize].add_to_memory(&state, action, reward, true);
             self.agents[a as usize].active = false;
             return (state, reward, true);
         }
-
-        /*
-        let proximity_ray = Ray::new(direction_change, self.agents[a as usize].speed*3.0, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
+        let proximity_ray = Ray::new(direction_change, self.agents[a as usize].speed*10.0, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
         if utils::intersects(&proximity_ray, &self.line_strings.iter().collect()) {
             reward = -2.0;
         }
-         */
-
         self.agents[a as usize].age = self.agents[a as usize].age + 1.0;
         self.agents[a as usize].step(action as usize);
-
         let (mut state, closest_target) = self.get_state(a, step_ray);
-        //self.agents[a as usize].closest_target = closest_target;
-        reward = reward - state[1] / 3.0;
-        //println!("bearing {}", state[0]);
-        //println!("bearing reward {}", reward - state[0].abs());
+        self.agents[a as usize].closest_target = closest_target;
+        // Target
         reward = reward - state[0].abs() / 3.0;
+        reward = reward - state[1] / 3.0;
+        // Past position
+        reward = reward - (1.0-state[2].abs()) / 20.0;
+        reward = reward - (1.0-state[3]) / 20.0;
         if state[1]*1000.0 < 10.0 {
             state = self.agents[a as usize].last_state.iter().copied().collect();
             reward = 7.0;
             self.possible_targets.retain(|t| t.x_y() != closest_target.x_y());
             self.agents[a as usize].collect_target(closest_target, self.targets.len() as i32);
         }
-
         self.agents[a as usize].last_state = state.iter().copied().collect();
-        //self.agents[a as usize].add_to_memory(&state, action, reward, false);
         return (state, reward, false);
     }
+
+
 
     pub fn get_state(&mut self, a: i32, mut step_ray: Ray) -> (Vec<f64>, Point<f64>) {
         let step_ray = Ray::new(0.0, self.agents[a as usize].speed, self.agents[a as usize].direction, self.agents[a as usize].position, false, 0.0);
